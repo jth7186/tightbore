@@ -1034,15 +1034,15 @@ function App(){
       {modal==="event"&&eventModal()}
       {modal==="loads"&&loadsModal()}
       {modal==="load_form"&&(
-        <div style={A.overlay} onClick={()=>setModal("loads")}>
-          <div style={A.sheet} onClick={e=>e.stopPropagation()}>
+        <div style={A.overlay}>
+          <div style={A.sheet}>
             {loadForm()}
           </div>
         </div>
       )}
       {modal==="caliber_form"&&(
-        <div style={A.overlay} onClick={()=>setModal("loads")}>
-          <div style={A.sheet} onClick={e=>e.stopPropagation()}>
+        <div style={A.overlay}>
+          <div style={A.sheet}>
             {caliberForm()}
           </div>
         </div>
