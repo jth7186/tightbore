@@ -969,8 +969,9 @@ function App(){
   return(
     <div style={{fontFamily:T.sans,background:T.bg,minHeight:"100vh",color:T.text,maxWidth:maxW,margin:"0 auto"}}>
       <input type="file" accept=".json" ref={importRef} onChange={handleImport} style={{display:"none"}}/>
-      <div style={{background:T.surf,borderBottom:`1px solid ${T.bdr}`,padding:`18px ${pad+4}px 16px`,position:"sticky",top:0,zIndex:10}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:10}}>
+      <div style={{background:T.surf,borderBottom:`1px solid ${T.bdr}`,position:"sticky",top:0,zIndex:10}}>
+        {/* Row 1 — brand + theme toggle */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:`14px ${pad+4}px 10px`}}>
           <div style={{display:"flex",alignItems:"center",gap:11,minWidth:0}}>
             <BoreLogo size={38}/>
             <div>
@@ -978,13 +979,14 @@ function App(){
               <div style={{fontSize:9,color:T.mut,letterSpacing:"0.10em",textTransform:"uppercase",marginTop:4}}>Barrel life, precisely tracked</div>
             </div>
           </div>
-          <div style={{display:"flex",gap:7,alignItems:"center",flexShrink:0}}>
-            <button onClick={()=>{setNewCalName("");setModal("caliber_form");}} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:5,padding:"7px 10px"}}><Ic.Plus/> Caliber</button>
-            <button onClick={()=>{if(calibers.length===0){setFabMenu(true);}else{setModal("barrel");}}} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:5,padding:"7px 10px"}}><Ic.Plus/> Barrel</button>
-            <button onClick={()=>setModal("loads")} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:5,padding:"7px 10px"}}><Ic.Book/> Loads</button>
-            <button onClick={()=>importRef.current&&importRef.current.click()} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:5,padding:"7px 10px"}}><Ic.Up/> Import</button>
-            {themeBtn()}
-          </div>
+          {themeBtn()}
+        </div>
+        {/* Row 2 — action buttons */}
+        <div style={{display:"flex",gap:6,padding:`0 ${pad+4}px 12px`}}>
+          <button onClick={()=>{setNewCalName("");setModal("caliber_form");}} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Plus/> Caliber</button>
+          <button onClick={()=>{if(calibers.length===0){setFabMenu(true);}else{setModal("barrel");}}} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Plus/> Barrel</button>
+          <button onClick={()=>setModal("loads")} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}>Loads</button>
+          <button onClick={()=>importRef.current&&importRef.current.click()} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Up/> Import</button>
         </div>
       </div>
       <div style={{paddingBottom:100}}>
