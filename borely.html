@@ -462,6 +462,7 @@ function App(){
   const[confTransfer, setConfTransfer] =useState(false);
   const[confDelCal,   setConfDelCal]   =useState(null);
   const[confDelLoad,  setConfDelLoad]  =useState(null);
+  const[fabMenu,      setFabMenu]      =useState(false);
   const[fromDetail,   setFromDetail]   =useState(false);
   // session
   const[fShots,setFShots]=useState(1);
@@ -978,6 +979,8 @@ function App(){
             </div>
           </div>
           <div style={{display:"flex",gap:7,alignItems:"center",flexShrink:0}}>
+            <button onClick={()=>{setNewCalName("");setModal("caliber_form");}} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:5,padding:"7px 10px"}}><Ic.Plus/> Caliber</button>
+            <button onClick={()=>{if(calibers.length===0){setFabMenu(true);}else{setModal("barrel");}}} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:5,padding:"7px 10px"}}><Ic.Plus/> Barrel</button>
             <button onClick={()=>setModal("loads")} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:5,padding:"7px 10px"}}><Ic.Book/> Loads</button>
             <button onClick={()=>importRef.current&&importRef.current.click()} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",gap:5,padding:"7px 10px"}}><Ic.Up/> Import</button>
             {themeBtn()}
@@ -1030,7 +1033,7 @@ function App(){
         }
       </div>
 
-      <button style={A.fab} onClick={()=>setModal("barrel")}><Ic.Plus/></button>
+      <button style={A.fab} onClick={()=>setFabMenu(true)}><Ic.Plus/></button>
       <button onClick={()=>setModal("help")} style={{position:"fixed",bottom:28,left:24,width:36,height:36,borderRadius:"50%",background:T.surf,border:`1px solid ${T.bdr}`,color:T.sub,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:600,boxShadow:"0 1px 6px rgba(0,0,0,0.12)",zIndex:20}}>?</button>
 
       {modal==="event"&&eventModal()}
@@ -1207,6 +1210,32 @@ function App(){
               <div style={{fontSize:10,color:T.mut,marginTop:16,textAlign:"center"}}>© {new Date().getFullYear()} Tight Bore LLC. All rights reserved.</div>
             </div>
             <button style={{...A.btnG,marginTop:16}} onClick={()=>setModal(null)}>Done</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── FAB action picker ── */}
+      {fabMenu&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(10,9,8,.72)",display:"flex",alignItems:"flex-end",zIndex:200}} onClick={()=>setFabMenu(false)}>
+          <div style={{background:T.surf,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:maxW,margin:"0 auto",padding:"20px 20px 36px"}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.14em",color:T.mut,marginBottom:16,textAlign:"center"}}>What would you like to add?</div>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <button onClick={()=>{setNewCalName("");setFabMenu(false);setModal("caliber_form");}} style={{...A.btnG,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,padding:"14px"}}>
+                <Ic.Plus/> Add Caliber
+              </button>
+              {calibers.length===0
+                ?<div style={{background:T.amberBg,border:`1px solid ${T.amberBdr}`,borderRadius:8,padding:"12px 16px",fontSize:13,color:T.amber,textAlign:"center",lineHeight:1.5}}>
+                  You need at least one caliber before adding a barrel.<br/><span style={{fontSize:11,color:T.sub}}>Add a caliber first using the button above.</span>
+                </div>
+                :<button onClick={()=>{setFabMenu(false);setModal("barrel");}} style={{...A.btnG,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,padding:"14px"}}>
+                  <Ic.Plus/> Add Barrel
+                </button>
+              }
+              <button onClick={()=>{setFabMenu(false);setModal("loads");}} style={{...A.btnG,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,padding:"14px"}}>
+                <Ic.Book/> Load Library
+              </button>
+            </div>
+            <button onClick={()=>setFabMenu(false)} style={{...A.btnG,marginTop:10,fontSize:13,color:T.mut}}>Cancel</button>
           </div>
         </div>
       )}
