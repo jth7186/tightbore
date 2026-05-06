@@ -460,6 +460,8 @@ function App(){
   const[modal,        setModal]        =useState(null);
   const[confDel,      setConfDel]      =useState(false);
   const[confTransfer, setConfTransfer] =useState(false);
+  const[confDelCal,   setConfDelCal]   =useState(null);
+  const[confDelLoad,  setConfDelLoad]  =useState(null);
   const[fromDetail,   setFromDetail]   =useState(false);
   // session
   const[fShots,setFShots]=useState(1);
@@ -770,7 +772,7 @@ function App(){
                       <Ic.Plus/> Add Load
                     </button>
                     {calLoads.length===0&&(
-                      <button onClick={()=>delCaliber(cal.id)} style={{background:"transparent",border:"none",color:T.mut,cursor:"pointer",display:"flex",alignItems:"center"}}><Ic.Trash/></button>
+                      <button onClick={()=>setConfDelCal(cal.id)} style={{background:"transparent",border:"none",color:T.mut,cursor:"pointer",display:"flex",alignItems:"center"}}><Ic.Trash/></button>
                     )}
                   </div>
                 </div>
@@ -799,7 +801,7 @@ function App(){
                             setLCoal(l.coal||"");setLCbto(l.cbto||"");setLVel(l.velocity||"");setLNts(l.notes||"");
                             setModal("load_form");
                           }} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:5,color:T.sub,cursor:"pointer",fontSize:11,padding:"4px 10px"}}>Edit</button>
-                          <button onClick={()=>delLoad(l.id)} style={{background:"transparent",border:"none",color:T.mut,cursor:"pointer",display:"flex",alignItems:"center"}}><Ic.Trash/></button>
+                          <button onClick={()=>setConfDelLoad(l.id)} style={{background:"transparent",border:"none",color:T.mut,cursor:"pointer",display:"flex",alignItems:"center"}}><Ic.Trash/></button>
                         </div>
                       </div>
                     </div>
@@ -952,7 +954,7 @@ function App(){
           <div style={A.overlay} onClick={()=>setConfDel(false)}>
             <div style={A.sheet} onClick={e=>e.stopPropagation()}>
               <div style={{fontSize:15,fontWeight:700,color:T.text,marginBottom:16}}>Delete barrel?</div>
-              <p style={{fontSize:13,color:T.sub,lineHeight:1.65,marginBottom:20}}>Permanently deletes <b style={{color:T.text}}>{barrel.name}</b> and all data.</p>
+              <p style={{fontSize:13,color:T.sub,lineHeight:1.65,marginBottom:20}}>Permanently deletes <b style={{color:T.text}}>{barrel.name}</b> and all data. This cannot be undone.</p>
               <button style={{...A.btnP,background:T.danger}} onClick={delBarrel}>Delete</button>
               <button style={A.btnG} onClick={()=>setConfDel(false)}>Cancel</button>
             </div>
@@ -1208,6 +1210,45 @@ function App(){
           </div>
         </div>
       )}
+
+      {/* ── Confirm delete caliber ── */}
+      {confDelCal&&(()=>{
+        const cal=calibers.find(c=>c.id===confDelCal);
+        const loadCount=loads.filter(l=>l.caliberId===confDelCal).length;
+        return(
+          <div style={{position:"fixed",inset:0,background:"rgba(10,9,8,.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"0 24px"}}>
+            <div style={{background:T.surf,border:`1px solid ${T.danger}`,borderRadius:14,padding:"28px 24px",width:"100%",maxWidth:340}}>
+              <div style={{fontSize:15,fontWeight:700,color:T.text,marginBottom:10}}>Delete caliber?</div>
+              <p style={{fontSize:13,color:T.sub,lineHeight:1.65,marginBottom:6}}>
+                Permanently deletes <b style={{color:T.text}}>{cal?cal.name:"this caliber"}</b>
+                {loadCount>0&&<> and <b style={{color:T.text}}>{loadCount} load{loadCount!==1?"s":""}</b> associated with it</>}.
+              </p>
+              <p style={{fontSize:12,color:T.danger,marginBottom:20,fontWeight:500}}>⚠ This cannot be undone.</p>
+              <button style={{...A.btnP,background:T.danger,marginBottom:8}} onClick={()=>{delCaliber(confDelCal);setConfDelCal(null);}}>Delete</button>
+              <button style={A.btnG} onClick={()=>setConfDelCal(null)}>Cancel</button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Confirm delete load ── */}
+      {confDelLoad&&(()=>{
+        const load=loads.find(l=>l.id===confDelLoad);
+        return(
+          <div style={{position:"fixed",inset:0,background:"rgba(10,9,8,.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"0 24px"}}>
+            <div style={{background:T.surf,border:`1px solid ${T.danger}`,borderRadius:14,padding:"28px 24px",width:"100%",maxWidth:340}}>
+              <div style={{fontSize:15,fontWeight:700,color:T.text,marginBottom:10}}>Delete load?</div>
+              <p style={{fontSize:13,color:T.sub,lineHeight:1.65,marginBottom:6}}>
+                Permanently deletes <b style={{color:T.text}}>{load?load.name||load.bullet||"this load":"this load"}</b> from your load library.
+              </p>
+              <p style={{fontSize:12,color:T.danger,marginBottom:20,fontWeight:500}}>⚠ This cannot be undone.</p>
+              <button style={{...A.btnP,background:T.danger,marginBottom:8}} onClick={()=>{delLoad(confDelLoad);setConfDelLoad(null);}}>Delete</button>
+              <button style={A.btnG} onClick={()=>setConfDelLoad(null)}>Cancel</button>
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
 }
