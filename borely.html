@@ -819,8 +819,8 @@ function App(){
   const eventModal=()=>{
     const tabs=fromDetail?[["session","Session"],["clean","Cleaning"],["cbto","CBTO"]]:null;
     return(
-      <div style={A.overlay} onClick={()=>setModal(null)}>
-        <div style={A.sheet} onClick={e=>e.stopPropagation()}>
+      <div style={A.overlay}>
+        <div style={A.sheet}>
           {tabs&&<div style={{display:"flex",gap:6,marginBottom:20}}>
             {tabs.map(([k,l])=><button key={k} onClick={()=>setEvType(k)} style={{flex:1,padding:"8px 0",background:evType===k?T.acc:T.bg,color:evType===k?"#fff":T.sub,border:`1px solid ${evType===k?T.acc:T.bdr}`,borderRadius:6,fontSize:12,fontWeight:evType===k?600:400,cursor:"pointer"}}>{l}</button>)}
           </div>}
@@ -1055,8 +1055,8 @@ function App(){
         </div>
       )}
       {modal==="barrel"&&(
-        <div style={A.overlay} onClick={()=>setModal(null)}>
-          <div style={A.sheet} onClick={e=>e.stopPropagation()}>
+        <div style={A.overlay}>
+          <div style={A.sheet}>
             <div style={{fontSize:15,fontWeight:700,color:T.text,marginBottom:20}}>Add Barrel</div>
             {lbl("Name *")}<input style={A.inp} value={bName} onChange={e=>setBName(e.target.value)} placeholder="e.g. 6.5 CM Match #1" autoFocus/>
 
