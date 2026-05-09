@@ -407,7 +407,7 @@ function exportPDF(barrel,events){
 
 function exportBarrelPack(barrel,events){
   const pack={throat_barrel_pack:true,version:"1.0",exportDate:toLocalDate(),barrel:{...barrel,status:undefined,transferredDate:undefined},events:events.filter(e=>e.barrelId===barrel.id)};
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(pack,null,2)],{type:"application/json"}));a.download=`${barrel.name.replace(/[^a-zA-Z0-9]/g,"-")}${barrel.caliber?"-"+barrel.caliber.replace(/[^a-zA-Z0-9.]/g,"-"):""}.borely.json`;a.click();
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(pack,null,2)],{type:"application/json"}));a.download=`${barrel.name.replace(/\s+/g,"_")}_barrel_pack.json`;a.click();
 }
 
 // ─── Splash ──────────────────────────────────────────────────────────────────
@@ -443,25 +443,12 @@ function App(){
   const toggleDark=()=>{const n=!darkMode;setDarkMode(n);document.body.style.background=n?DARK.bg:HC.bg;try{localStorage.setItem("borely_dark",n?"1":"0");}catch{}};
   useEffect(()=>{document.body.style.background=T.bg;},[darkMode]);
 
-  // ── IAP / Trial — BETA_MODE=true bypasses all gates for testing ─────────────
-  const BETA_MODE=true;
-  const[isPaid,    setIsPaid]    =useState(()=>{try{return localStorage.getItem("borely_paid")==="1";}catch{return false;}});
-  const[trialStart,setTrialStart]=useState(()=>{try{const s=localStorage.getItem("borely_trial_start");if(s)return s;const d=toLocalDate();localStorage.setItem("borely_trial_start",d);return d;}catch{return toLocalDate();}});
-  const trialDaysUsed=Math.floor((new Date()-new Date(trialStart+"T12:00:00"))/86400000);
-  const trialDaysLeft=Math.max(0,7-trialDaysUsed);
-  const trialExpired=trialDaysLeft===0&&!isPaid;
-  const gated=!BETA_MODE&&!isPaid;
-  const canAddCaliber=!gated||(calibers.length===0);
-  const canAddBarrel =!gated||(barrels.filter(b=>b.status!=="transferred").length===0);
-  const[showPaywall, setShowPaywall]=useState(null);
-
   const[barrels,  setBarrels]  =useState(()=>{try{const s=localStorage.getItem("borely_barrels");return s?JSON.parse(s):[];}catch{return[];}});
   const[events,   setEvents]   =useState(()=>{try{const s=localStorage.getItem("borely_events");return s?JSON.parse(s):[];}catch{return[];}});
   const[calibers, setCalibers] =useState(()=>{try{const s=localStorage.getItem("borely_calibers");return s?JSON.parse(s):[];}catch{return[];}});
   const[loads,    setLoads]    =useState(()=>{try{const s=localStorage.getItem("borely_loads");return s?JSON.parse(s):[];}catch{return[];}});
   const[splash,   setSplash]   =useState(true);
 
-  useEffect(()=>{try{localStorage.setItem("borely_paid",isPaid?"1":"0");}catch{}},[isPaid]);
   useEffect(()=>{try{localStorage.setItem("borely_barrels",JSON.stringify(barrels));}catch{}},[barrels]);
   useEffect(()=>{try{localStorage.setItem("borely_events",JSON.stringify(events));}catch{}},[events]);
   useEffect(()=>{try{localStorage.setItem("borely_calibers",JSON.stringify(calibers));}catch{}},[calibers]);
@@ -496,8 +483,7 @@ function App(){
   const[xVal,  setXVal]  =useState("");const[xDate,setXDate]=useState(toLocalDate());
   const[xComp, setXComp] =useState("");const[xCal,setXCal]=useState("");const[xNts,setXNts]=useState("");
   // barrel form
-  const[bName, setBName] =useState("");const[bCal,setBCal]=useState("");const[bCalId,setBCalId]=useState("");
-  const[bEditId,setBEditId]=useState(null); // "" = unset, caliber.id = library pick, "other" = manual
+  const[bName, setBName] =useState("");const[bCal,setBCal]=useState("");const[bCalId,setBCalId]=useState(""); // "" = unset, caliber.id = library pick, "other" = manual
   const[bNts,setBNts]=useState("");const[bLife,setBLife]=useState("");
   const[bShowC,setBShowC]=useState(false);const[bCbtoV,setBCbtoV]=useState("");const[bCbtoD,setBCbtoD]=useState(toLocalDate());
   const[bComp, setBComp] =useState("");const[bCalip,setBCalip]=useState("");const[bCbtoN,setBCbtoN]=useState("");
@@ -568,10 +554,6 @@ function App(){
     if(b?.caliber){const l=lastUsedLoad(b.caliber);if(l){setFLoadSel(l.id);applyLoad(l);}}
     setEvType("session");setFromDetail(false);setModal("event");
   };
-  const openQuickClean=(id,e)=>{
-    e&&e.stopPropagation();setFTgt(id);resetClean();
-    setEvType("clean");setFromDetail(false);setModal("event");
-  };
   const openDetailEv=()=>{
     setFTgt(activeId);resetSess();resetClean();resetCbto();
     if(barrel?.caliber){const l=lastUsedLoad(barrel.caliber);if(l){setFLoadSel(l.id);applyLoad(l);}}
@@ -579,23 +561,12 @@ function App(){
   };
 
   // mutations
-  const openEditBarrel=b=>{
-    setBEditId(b.id);setBName(b.name);setBNts(b.notes||"");setBLife(b.lifeRounds?String(b.lifeRounds):"");
-    const calObj=calibers.find(c=>c.name.trim().toLowerCase()===b.caliber?.trim().toLowerCase());
-    setBCalId(calObj?calObj.id:"");setBCal(b.caliber||"");
-    setBShowC(false);setBCbtoV("");setBCbtoD(toLocalDate());setBComp("");setBCalip("");setBCbtoN("");
-    setModal("barrel");
-  };
   const addBarrel=()=>{
     if(!bName.trim())return;
-    if(bEditId){
-      setBarrels(p=>p.map(b=>b.id===bEditId?{...b,name:bName.trim(),caliber:bCal.trim(),notes:bNts.trim(),lifeRounds:bLife?parseInt(bLife):null}:b));
-    } else {
-      const id=uid();
-      setBarrels(p=>[...p,{id,name:bName.trim(),caliber:bCal.trim(),notes:bNts.trim(),lifeRounds:bLife?parseInt(bLife):null,created:toLocalDate(),status:"active"}]);
-      if(bShowC&&bCbtoV){const v=parseFloat(bCbtoV);if(!isNaN(v)&&v>0)setEvents(p=>[...p,{id:uid(),barrelId:id,type:"cbto",date:bCbtoD,measurement:v,comparator:bComp.trim(),caliper:bCalip.trim(),notes:bCbtoN.trim()}]);}
-    }
-    setBEditId(null);setBName("");setBCal("");setBCalId("");setBNts("");setBLife("");setBShowC(false);setBCbtoV("");setBCbtoD(toLocalDate());setBComp("");setBCalip("");setBCbtoN("");setModal(null);
+    const id=uid();
+    setBarrels(p=>[...p,{id,name:bName.trim(),caliber:bCal.trim(),notes:bNts.trim(),lifeRounds:bLife?parseInt(bLife):null,created:toLocalDate(),status:"active"}]);
+    if(bShowC&&bCbtoV){const v=parseFloat(bCbtoV);if(!isNaN(v)&&v>0)setEvents(p=>[...p,{id:uid(),barrelId:id,type:"cbto",date:bCbtoD,measurement:v,comparator:bComp.trim(),caliper:bCalip.trim(),notes:bCbtoN.trim()}]);}
+    setBName("");setBCal("");setBCalId("");setBNts("");setBLife("");setBShowC(false);setBCbtoV("");setBCbtoD(toLocalDate());setBComp("");setBCalip("");setBCbtoN("");setModal(null);
   };
   const addSession=()=>{
     if(!fTgt||fShots<1)return;
@@ -603,7 +574,7 @@ function App(){
     setEvents(p=>[...p,{id:uid(),barrelId:fTgt,type:"session",date:fDate,shots:fShots,suppressed:fSupp,loadId:sl?.id||null,loadName:sl?.name||null,bullet:fBul.trim(),powder:fPow.trim(),charge:fChg.trim(),primer:fPrim.trim(),brass:fBrass.trim(),coal:fCoal.trim(),sessionCbto:fSCbto.trim(),velocity:fVel?parseFloat(fVel):null,es:fES?parseFloat(fES):null,sd:fSD?parseFloat(fSD):null,groupSize:fGrp?parseFloat(fGrp):null,groupDistance:fGrpD?parseFloat(fGrpD):null,groupUnit:fGrpU,conditions:fCond.trim(),sessionNotes:fNts.trim()}]);
     setModal(null);
   };
-  const addClean=()=>{const bid=fromDetail?activeId:fTgt;if(!bid)return;setEvents(p=>[...p,{id:uid(),barrelId:bid,type:"clean",date:cDate,solvents:cSolv.trim(),method:cMeth.trim(),passes:cPass?parseInt(cPass):null,observations:cObs.trim()}]);setModal(null);};
+  const addClean=()=>{if(!activeId)return;setEvents(p=>[...p,{id:uid(),barrelId:activeId,type:"clean",date:cDate,solvents:cSolv.trim(),method:cMeth.trim(),passes:cPass?parseInt(cPass):null,observations:cObs.trim()}]);setModal(null);};
   const addCbto =()=>{const v=parseFloat(xVal);if(!activeId||isNaN(v)||v<=0)return;setEvents(p=>[...p,{id:uid(),barrelId:activeId,type:"cbto",date:xDate,measurement:v,comparator:xComp.trim(),caliper:xCal.trim(),notes:xNts.trim()}]);setModal(null);};
   const saveLoad=()=>{
     if(!lCalId||!lBul.trim())return;
@@ -853,9 +824,7 @@ function App(){
           {tabs&&<div style={{display:"flex",gap:6,marginBottom:20}}>
             {tabs.map(([k,l])=><button key={k} onClick={()=>setEvType(k)} style={{flex:1,padding:"8px 0",background:evType===k?T.acc:T.bg,color:evType===k?"#fff":T.sub,border:`1px solid ${evType===k?T.acc:T.bdr}`,borderRadius:6,fontSize:12,fontWeight:evType===k?600:400,cursor:"pointer"}}>{l}</button>)}
           </div>}
-          {!tabs&&<div style={{fontSize:15,fontWeight:700,color:T.text,marginBottom:20}}>
-            {evType==="clean"?"Log Cleaning":"Log Session"}{(()=>{const b=barrels.find(x=>x.id===fTgt);return b?` · ${b.name}`:""})()}
-          </div>}
+          {!tabs&&<div style={{fontSize:15,fontWeight:700,color:T.text,marginBottom:20}}>Log Session{barrel?` · ${barrel.name}`:""}</div>}
           {evType==="session"&&sessionForm()}
           {evType==="clean"  &&cleanForm()}
           {evType==="cbto"   &&cbtoForm()}
@@ -888,10 +857,7 @@ function App(){
             <div style={{fontSize:14,fontWeight:700,letterSpacing:"-0.01em",color:T.text}}>{barrel.name}</div>
             {isT&&<Badge label="Transferred" color={T.amber} bg={T.amberBg} border={T.amberBdr}/>}
           </div>
-          <div style={{display:"flex",gap:6,alignItems:"center"}}>
-            {!isT&&<button onClick={()=>openEditBarrel(barrel)} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,padding:"6px 10px"}}>Edit</button>}
-            {themeBtn()}
-          </div>
+          {themeBtn()}
         </div>
         <div style={{paddingBottom:100}}>
           {isT&&<div style={{background:T.amberBg,borderBottom:`1px solid ${T.amberBdr}`,padding:"10px 20px"}}><div style={{fontSize:11,color:T.amber,lineHeight:1.5}}><b>Archived read-only copy.</b> Transferred {fmtDate(barrel.transferredDate)}.</div></div>}
@@ -1000,8 +966,6 @@ function App(){
   }
 
   // ── Home ──────────────────────────────────────────────────────────────────
-  const activeBarrels=barrels.filter(b=>b.status!=="transferred");
-  const archivedBarrels=barrels.filter(b=>b.status==="transferred");
   return(
     <div style={{fontFamily:T.sans,background:T.bg,minHeight:"100vh",color:T.text,maxWidth:maxW,margin:"0 auto"}}>
       <input type="file" accept=".json" ref={importRef} onChange={handleImport} style={{display:"none"}}/>
@@ -1017,119 +981,58 @@ function App(){
           </div>
           {themeBtn()}
         </div>
-        {!BETA_MODE&&!isPaid&&trialDaysLeft<=3&&(
-          <div style={{background:trialExpired?T.danger:T.amberBg,borderBottom:`1px solid ${trialExpired?T.danger:T.amberBdr}`,padding:"8px 16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div style={{fontSize:11,color:trialExpired?"#fff":T.amber,fontWeight:500}}>
-              {trialExpired?"Your trial has ended — purchase to continue.":trialDaysLeft===1?"Last day of your free trial.":`${trialDaysLeft} days left in your free trial.`}
-            </div>
-            <button onClick={()=>setShowPaywall("caliber")} style={{background:trialExpired?T.danger:T.amber,color:"#fff",border:"none",borderRadius:5,padding:"5px 12px",fontSize:11,fontWeight:600,cursor:"pointer"}}>Buy Now</button>
-          </div>
-        )}
         {/* Row 2 — action buttons */}
         <div style={{display:"flex",gap:6,padding:`0 ${pad+4}px 12px`}}>
-          <button onClick={()=>{if(!canAddCaliber){setShowPaywall("caliber");}else{setNewCalName("");setModal("caliber_form");}}} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Plus/> Caliber</button>
-          <button onClick={()=>{if(calibers.length===0){setFabMenu(true);}else if(!canAddBarrel){setShowPaywall("barrel");}else{setModal("barrel");}}} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Plus/> Barrel</button>
+          <button onClick={()=>{setNewCalName("");setModal("caliber_form");}} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Plus/> Caliber</button>
+          <button onClick={()=>{if(calibers.length===0){setFabMenu(true);}else{setModal("barrel");}}} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Plus/> Barrel</button>
           <button onClick={()=>setModal("loads")} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}>Loads</button>
           <button onClick={()=>importRef.current&&importRef.current.click()} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Up/> Import</button>
         </div>
       </div>
       <div style={{paddingBottom:100}}>
         <div style={{padding:`16px ${pad}px 8px`,fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.10em",color:T.sub}}>Barrels</div>
-        {barrels.length===0?(
-          <div style={{padding:"60px 28px",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
-            <BoreLogo size={72}/>
-            <div style={{fontSize:20,fontWeight:700,letterSpacing:"-0.01em",color:T.text}}>Welcome to Borely</div>
-            <div style={{fontSize:13,color:T.sub,lineHeight:1.7,maxWidth:280}}>Track every round, every cleaning, and every throat measurement — all in one place.</div>
-            {calibers.length===0
-              ?<button onClick={()=>{setNewCalName("");setModal("caliber_form");}} style={{...A.btnP,width:"auto",padding:"12px 28px",fontSize:14,marginTop:4}}>Add Your First Caliber</button>
-              :<button onClick={()=>setModal("barrel")} style={{...A.btnP,width:"auto",padding:"12px 28px",fontSize:14,marginTop:4}}>Add Your First Barrel</button>
-            }
-            <div style={{fontSize:11,color:T.mut}}>or import a barrel pack using the Import button above</div>
+        {barrels.length===0
+          ?<div style={{padding:"52px 24px",textAlign:"center"}}><div style={{fontSize:11,textTransform:"uppercase",letterSpacing:"0.1em",color:T.mut,marginBottom:16}}>No barrels yet</div><div style={{fontSize:12,color:T.sub,lineHeight:1.6}}>Tap + to add a barrel, or import a barrel pack.</div></div>
+          :<div style={{display:"grid",gridTemplateColumns:wide?"1fr 1fr":"1fr",gap:10,padding:`0 ${pad}px`}}>
+            {barrels.map(b=>{
+              const isT=b.status==="transferred";
+              const bS=sessFor(b.id).sort((a,c)=>c.date.localeCompare(a.date)),bC=cbtosFor(b.id);
+              const tot=totalRnds(b.id),bRsc=rsc(b.id);
+              const pct=b.lifeRounds?Math.min(100,(tot/b.lifeRounds)*100):null;
+              const lc=lifeColor(pct,T),rc=cleanColor(bRsc,T);
+              const cur=bC[bC.length-1],bas=bC[0];
+              return(
+                <div key={b.id} style={{...A.card,opacity:isT?0.72:1}}>
+                  <div style={{padding:"14px 16px",cursor:"pointer"}} onClick={()=>{setActiveId(b.id);setTab("timeline");setView("detail");}}>
+                    <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
+                          <div style={{fontSize:15,fontWeight:700,letterSpacing:"-0.01em",color:T.text}}>{b.name}</div>
+                          {isT&&<Badge label="Transferred" color={T.amber} bg={T.amberBg} border={T.amberBdr}/>}
+                        </div>
+                        <div style={{fontSize:11,color:T.sub,marginTop:3}}>{[b.caliber,b.notes].filter(Boolean).join(" · ")||"No caliber set"}</div>
+                      </div>
+                      <div style={{textAlign:"right",flexShrink:0}}>
+                        <div style={{fontSize:22,fontWeight:700,fontFamily:T.mono,lineHeight:1,color:lc||T.text}}>{tot.toLocaleString()}</div>
+                        <div style={{fontSize:10,color:T.sub,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:2}}>{b.lifeRounds?`/ ${b.lifeRounds.toLocaleString()} rds`:"rounds"}</div>
+                      </div>
+                    </div>
+                    {pct!==null&&<div style={{height:3,background:T.bdr2,borderRadius:2,overflow:"hidden",marginTop:10}}><div style={{height:"100%",width:`${pct}%`,background:lc,borderRadius:2}}/></div>}
+                    <div style={{display:"flex",gap:14,marginTop:pct!==null?8:10,flexWrap:"wrap"}}>
+                      <div style={{fontSize:11,color:T.sub}}><span style={{fontFamily:T.mono,fontWeight:600,color:rc}}>{bRsc.toLocaleString()}</span> since clean</div>
+                      {cur&&<div style={{fontSize:11,color:T.sub}}>CBTO <span style={{fontFamily:T.mono,fontWeight:600,color:T.text}}>{fmtCBTO(cur.measurement)}</span>{bC.length>1&&<span style={{fontFamily:T.mono,color:T.sub}}> +{(parseFloat(cur.measurement)-parseFloat(bas.measurement)).toFixed(4)}"</span>}</div>}
+                      {bS[0]&&<div style={{fontSize:11,color:T.sub,marginLeft:"auto"}}>{fmtAgo(bS[0].date)}</div>}
+                    </div>
+                  </div>
+                  {!isT
+                    ?<div onClick={e=>openQuickSess(b.id,e)} style={{borderTop:`1px solid ${T.bdr2}`,padding:"10px 16px",display:"flex",alignItems:"center",gap:6,color:T.acc,fontSize:12,fontWeight:500,cursor:"pointer"}}><Ic.Plus/> Log Session</div>
+                    :<div style={{borderTop:`1px solid ${T.bdr2}`,padding:"9px 16px",color:T.mut,fontSize:11}}>Archived · transferred {fmtDate(b.transferredDate)}</div>
+                  }
+                </div>
+              );
+            })}
           </div>
-        ):(
-          <>
-            {activeBarrels.length>0&&(
-              <>
-                <div style={{padding:`16px ${pad}px 8px`,fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.10em",color:T.sub}}>Active Barrels</div>
-                <div style={{display:"grid",gridTemplateColumns:wide?"1fr 1fr":"1fr",gap:10,padding:`0 ${pad}px`}}>
-                  {activeBarrels.map(b=>{
-                    const bS=sessFor(b.id).sort((a,c)=>c.date.localeCompare(a.date)),bC=cbtosFor(b.id);
-                    const tot=totalRnds(b.id),bRsc=rsc(b.id);
-                    const pct=b.lifeRounds?Math.min(100,(tot/b.lifeRounds)*100):null;
-                    const lc=lifeColor(pct,T),rc=cleanColor(bRsc,T);
-                    const cur=bC[bC.length-1],bas=bC[0];
-                    return(
-                      <div key={b.id} style={A.card}>
-                        <div style={{padding:"14px 16px",cursor:"pointer"}} onClick={()=>{setActiveId(b.id);setTab("timeline");setView("detail");}}>
-                          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{fontSize:15,fontWeight:700,letterSpacing:"-0.01em",color:T.text}}>{b.name}</div>
-                              <div style={{fontSize:11,color:T.sub,marginTop:3}}>{[b.caliber,b.notes].filter(Boolean).join(" · ")||"No caliber set"}</div>
-                            </div>
-                            <div style={{textAlign:"right",flexShrink:0}}>
-                              <div style={{fontSize:22,fontWeight:700,fontFamily:T.mono,lineHeight:1,color:lc||T.text}}>{tot.toLocaleString()}</div>
-                              <div style={{fontSize:10,color:T.sub,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:2}}>{b.lifeRounds?`/ ${b.lifeRounds.toLocaleString()} rds`:"rounds"}</div>
-                            </div>
-                          </div>
-                          {pct!==null&&<div style={{height:3,background:T.bdr2,borderRadius:2,overflow:"hidden",marginTop:10}}><div style={{height:"100%",width:`${pct}%`,background:lc,borderRadius:2}}/></div>}
-                          <div style={{display:"flex",gap:14,marginTop:pct!==null?8:10,flexWrap:"wrap"}}>
-                            <div style={{fontSize:11,color:T.sub}}><span style={{fontFamily:T.mono,fontWeight:600,color:rc}}>{bRsc.toLocaleString()}</span> since clean</div>
-                            {cur&&<div style={{fontSize:11,color:T.sub}}>CBTO <span style={{fontFamily:T.mono,fontWeight:600,color:T.text}}>{fmtCBTO(cur.measurement)}</span>{bC.length>1&&<span style={{fontFamily:T.mono,color:T.sub}}> +{(parseFloat(cur.measurement)-parseFloat(bas.measurement)).toFixed(4)}"</span>}</div>}
-                            {bS[0]&&<div style={{fontSize:11,color:T.sub,marginLeft:"auto"}}>{fmtAgo(bS[0].date)}</div>}
-                          </div>
-                        </div>
-                        <div style={{borderTop:`1px solid ${T.bdr2}`,display:"flex"}}>
-                          <div onClick={e=>openQuickSess(b.id,e)} style={{flex:1,padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"center",gap:5,color:T.acc,fontSize:12,fontWeight:500,cursor:"pointer",borderRight:`1px solid ${T.bdr2}`}}><Ic.Plus/> Session</div>
-                          <div onClick={e=>openQuickClean(b.id,e)} style={{flex:1,padding:"10px 12px",display:"flex",alignItems:"center",justifyContent:"center",gap:5,color:T.sub,fontSize:12,fontWeight:500,cursor:"pointer"}}><Ic.Plus/> Clean</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-            {archivedBarrels.length>0&&(
-              <>
-                <div style={{padding:`16px ${pad}px 8px`,fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.10em",color:T.mut}}>Archived</div>
-                <div style={{display:"grid",gridTemplateColumns:wide?"1fr 1fr":"1fr",gap:10,padding:`0 ${pad}px`}}>
-                  {archivedBarrels.map(b=>{
-                    const bS=sessFor(b.id).sort((a,c)=>c.date.localeCompare(a.date)),bC=cbtosFor(b.id);
-                    const tot=totalRnds(b.id),bRsc=rsc(b.id);
-                    const pct=b.lifeRounds?Math.min(100,(tot/b.lifeRounds)*100):null;
-                    const lc=lifeColor(pct,T),rc=cleanColor(bRsc,T);
-                    const cur=bC[bC.length-1],bas=bC[0];
-                    return(
-                      <div key={b.id} style={{...A.card,opacity:0.72}}>
-                        <div style={{padding:"14px 16px",cursor:"pointer"}} onClick={()=>{setActiveId(b.id);setTab("timeline");setView("detail");}}>
-                          <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{display:"flex",alignItems:"center",gap:7,flexWrap:"wrap"}}>
-                                <div style={{fontSize:15,fontWeight:700,letterSpacing:"-0.01em",color:T.text}}>{b.name}</div>
-                                <Badge label="Transferred" color={T.amber} bg={T.amberBg} border={T.amberBdr}/>
-                              </div>
-                              <div style={{fontSize:11,color:T.sub,marginTop:3}}>{[b.caliber,b.notes].filter(Boolean).join(" · ")||"No caliber set"}</div>
-                            </div>
-                            <div style={{textAlign:"right",flexShrink:0}}>
-                              <div style={{fontSize:22,fontWeight:700,fontFamily:T.mono,lineHeight:1,color:lc||T.text}}>{tot.toLocaleString()}</div>
-                              <div style={{fontSize:10,color:T.sub,textTransform:"uppercase",letterSpacing:"0.08em",marginTop:2}}>{b.lifeRounds?`/ ${b.lifeRounds.toLocaleString()} rds`:"rounds"}</div>
-                            </div>
-                          </div>
-                          {pct!==null&&<div style={{height:3,background:T.bdr2,borderRadius:2,overflow:"hidden",marginTop:10}}><div style={{height:"100%",width:`${pct}%`,background:lc,borderRadius:2}}/></div>}
-                          <div style={{display:"flex",gap:14,marginTop:pct!==null?8:10,flexWrap:"wrap"}}>
-                            <div style={{fontSize:11,color:T.sub}}><span style={{fontFamily:T.mono,fontWeight:600,color:rc}}>{bRsc.toLocaleString()}</span> since clean</div>
-                            {cur&&<div style={{fontSize:11,color:T.sub}}>CBTO <span style={{fontFamily:T.mono,fontWeight:600,color:T.text}}>{fmtCBTO(cur.measurement)}</span>{bC.length>1&&<span style={{fontFamily:T.mono,color:T.sub}}> +{(parseFloat(cur.measurement)-parseFloat(bas.measurement)).toFixed(4)}"</span>}</div>}
-                            {bS[0]&&<div style={{fontSize:11,color:T.sub,marginLeft:"auto"}}>{fmtAgo(bS[0].date)}</div>}
-                          </div>
-                        </div>
-                        <div style={{borderTop:`1px solid ${T.bdr2}`,padding:"9px 16px",color:T.mut,fontSize:11}}>Archived · transferred {fmtDate(b.transferredDate)}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
-          </>
-        )}
+        }
       </div>
 
       <button style={A.fab} onClick={()=>setFabMenu(true)}><Ic.Plus/></button>
@@ -1154,7 +1057,7 @@ function App(){
       {modal==="barrel"&&(
         <div style={A.overlay}>
           <div style={A.sheet}>
-            <div style={{fontSize:15,fontWeight:700,color:T.text,marginBottom:20}}>{bEditId?"Edit Barrel":"Add Barrel"}</div>
+            <div style={{fontSize:15,fontWeight:700,color:T.text,marginBottom:20}}>Add Barrel</div>
             {lbl("Name *")}<input style={A.inp} value={bName} onChange={e=>setBName(e.target.value)} placeholder="e.g. 6.5 CM Match #1" autoFocus/>
 
             {/* Caliber — dropdown from load library, or manual entry */}
@@ -1203,7 +1106,7 @@ function App(){
             )}
             {lbl("Notes")}<input style={A.inp} value={bNts} onChange={e=>setBNts(e.target.value)} placeholder='e.g. 24" Bartlein, 1:8 twist'/>
             {lbl("Estimated Life (rounds)")}<input style={A.inpM} value={bLife} onChange={e=>setBLife(e.target.value)} placeholder="e.g. 3000" inputMode="numeric"/>
-            {!bEditId&&<>{divider}
+            {divider}
             <button onClick={()=>setBShowC(v=>!v)} style={{width:"100%",background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,padding:"10px 14px",fontSize:12,color:T.sub,cursor:"pointer",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:bShowC?14:0}}>
               <span>Record initial CBTO <span style={{color:T.mut}}>(optional)</span></span>
               <span style={{color:T.acc,fontSize:18,lineHeight:1,fontWeight:300}}>{bShowC?"−":"+"}</span>
@@ -1214,9 +1117,9 @@ function App(){
               {lbl("Comparator Insert")}<input style={A.inp} value={bComp} onChange={e=>setBComp(e.target.value)} placeholder="e.g. Hornady Lock-N-Load, .284 insert"/>
               {lbl("Caliper")}<input style={A.inp} value={bCalip} onChange={e=>setBCalip(e.target.value)} placeholder="e.g. Mitutoyo 500-196-30"/>
               {lbl("Notes")}<textarea style={A.ta} value={bCbtoN} onChange={e=>setBCbtoN(e.target.value)} placeholder="Bullet used, any context…"/>
-            </div>}</>
-            <button style={{...A.btnP,opacity:!bCalId?0.45:1}} disabled={!bCalId} onClick={addBarrel}>{bEditId?"Save Changes":"Add Barrel"}</button>
-            <button style={A.btnG} onClick={()=>{setBEditId(null);setModal(null);}}>Cancel</button>
+            </div>}
+            <button style={A.btnP} onClick={addBarrel}>Add Barrel</button>
+            <button style={A.btnG} onClick={()=>setModal(null)}>Cancel</button>
           </div>
         </div>
       )}
@@ -1233,9 +1136,8 @@ function App(){
               const textBtn=(label,color,border)=><span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle",margin:"0 2px",background:T.bg,border:`1px solid ${border||T.bdr}`,borderRadius:5,padding:"2px 8px",fontSize:11,fontWeight:500,color:color||T.sub,whiteSpace:"nowrap"}}>{label}</span>;
               const numBtn=n=><span style={{display:"inline-flex",alignItems:"center",verticalAlign:"middle",margin:"0 1px",background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:5,padding:"2px 7px",fontSize:11,fontFamily:T.mono,fontWeight:500,color:T.sub}}>{n}</span>;
               const sections=[
-                {title:"1 — Add a caliber, then a barrel",steps:[
-                  <>Tap {textBtn("+ Caliber")} in the header to add a caliber first — required before adding a barrel.</>,
-                  <>Tap {textBtn("+ Barrel")} and select your caliber from the library, then fill in name, optional notes and estimated life.</>,
+                {title:"1 — Add a barrel",steps:[
+                  <>{plusBtn()} at bottom right → fill in name, caliber, optional notes and estimated life.</>,
                   "Optionally record your initial CBTO to lands as a baseline for throat erosion tracking.",
                 ]},
                 {title:"2 — Save loads",steps:[
@@ -1320,63 +1222,22 @@ function App(){
           <div style={{background:T.surf,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:maxW,margin:"0 auto",padding:"20px 20px 36px"}} onClick={e=>e.stopPropagation()}>
             <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.14em",color:T.mut,marginBottom:16,textAlign:"center"}}>What would you like to add?</div>
             <div style={{display:"flex",flexDirection:"column",gap:10}}>
-              <button onClick={()=>{if(!canAddCaliber){setFabMenu(false);setShowPaywall("caliber");}else{setNewCalName("");setFabMenu(false);setModal("caliber_form");}}} style={{...A.btnG,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,padding:"14px"}}>
+              <button onClick={()=>{setNewCalName("");setFabMenu(false);setModal("caliber_form");}} style={{...A.btnG,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,padding:"14px"}}>
                 <Ic.Plus/> Add Caliber
               </button>
               {calibers.length===0
                 ?<div style={{background:T.amberBg,border:`1px solid ${T.amberBdr}`,borderRadius:8,padding:"12px 16px",fontSize:13,color:T.amber,textAlign:"center",lineHeight:1.5}}>
                   You need at least one caliber before adding a barrel.<br/><span style={{fontSize:11,color:T.sub}}>Add a caliber first using the button above.</span>
                 </div>
-                :<button onClick={()=>{if(!canAddBarrel){setFabMenu(false);setShowPaywall("barrel");}else{setFabMenu(false);setModal("barrel");}}} style={{...A.btnG,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,padding:"14px"}}>
+                :<button onClick={()=>{setFabMenu(false);setModal("barrel");}} style={{...A.btnG,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,padding:"14px"}}>
                   <Ic.Plus/> Add Barrel
                 </button>
               }
-              <button onClick={()=>{setFabMenu(false);setModal("loads");}} style={{...A.btnG,display:"flex",flexDirection:"column",alignItems:"center",gap:2,padding:"12px"}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,fontSize:14,color:T.sub}}><Ic.Book/> Load Library</div>
-                <div style={{fontSize:10,color:T.mut,letterSpacing:"0.06em"}}>add or browse loads</div>
+              <button onClick={()=>{setFabMenu(false);setModal("loads");}} style={{...A.btnG,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontSize:14,padding:"14px"}}>
+                <Ic.Book/> Load Library
               </button>
             </div>
             <button onClick={()=>setFabMenu(false)} style={{...A.btnG,marginTop:10,fontSize:13,color:T.mut}}>Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Paywall sheet ── */}
-      {showPaywall&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(10,9,8,.75)",display:"flex",alignItems:"flex-end",zIndex:300}}>
-          <div style={{background:T.surf,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:maxW,margin:"0 auto",padding:"28px 24px 48px"}}>
-            <div style={{textAlign:"center",marginBottom:20}}>
-              <BoreLogo size={52}/>
-              <div style={{fontSize:18,fontWeight:700,color:T.text,marginTop:12,marginBottom:6}}>Unlock Borely</div>
-              <div style={{fontSize:13,color:T.sub,lineHeight:1.65}}>
-                {showPaywall==="caliber"?"Add another caliber to your library.":"Add another barrel to track."}
-              </div>
-            </div>
-            <div style={{background:T.bg,borderRadius:10,overflow:"hidden",marginBottom:16}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:`1px solid ${T.bdr}`}}>
-                <div>
-                  <div style={{fontSize:13,fontWeight:600,color:T.text}}>Borely — Full App</div>
-                  <div style={{fontSize:11,color:T.sub,marginTop:2}}>1 caliber + 1 barrel included</div>
-                </div>
-                <div style={{fontSize:17,fontWeight:700,fontFamily:T.mono,color:T.acc}}>$10</div>
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:`1px solid ${T.bdr}`}}>
-                <div>
-                  <div style={{fontSize:13,fontWeight:600,color:T.text}}>Additional Barrel</div>
-                  <div style={{fontSize:11,color:T.sub,marginTop:2}}>Unlock one more barrel</div>
-                </div>
-                <div style={{fontSize:17,fontWeight:700,fontFamily:T.mono,color:T.acc}}>$3</div>
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px"}}>
-                <div>
-                  <div style={{fontSize:13,fontWeight:600,color:T.text}}>Additional Caliber</div>
-                  <div style={{fontSize:11,color:T.sub,marginTop:2}}>Unlock one more caliber</div>
-                </div>
-                <div style={{fontSize:17,fontWeight:700,fontFamily:T.mono,color:T.acc}}>$5</div>
-              </div>
-            </div>
-            <button style={{...A.btnP,opacity:0.55,marginBottom:4}} disabled>Purchase — Coming to App Store</button>
-            <button style={A.btnG} onClick={()=>setShowPaywall(null)}>Not Now</button>
           </div>
         </div>
       )}
@@ -1385,7 +1246,6 @@ function App(){
       {confDelCal&&(()=>{
         const cal=calibers.find(c=>c.id===confDelCal);
         const loadCount=loads.filter(l=>l.caliberId===confDelCal).length;
-        const barrelCount=barrels.filter(b=>cal&&b.caliber&&b.caliber.trim().toLowerCase()===cal.name.trim().toLowerCase()).length;
         return(
           <div style={{position:"fixed",inset:0,background:"rgba(10,9,8,.75)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:200,padding:"0 24px"}}>
             <div style={{background:T.surf,border:`1px solid ${T.danger}`,borderRadius:14,padding:"28px 24px",width:"100%",maxWidth:340}}>
@@ -1394,11 +1254,6 @@ function App(){
                 Permanently deletes <b style={{color:T.text}}>{cal?cal.name:"this caliber"}</b>
                 {loadCount>0&&<> and <b style={{color:T.text}}>{loadCount} load{loadCount!==1?"s":""}</b> associated with it</>}.
               </p>
-              {barrelCount>0&&(
-                <div style={{background:T.amberBg,border:`1px solid ${T.amberBdr}`,borderRadius:6,padding:"10px 14px",marginBottom:10,fontSize:12,color:T.amber,lineHeight:1.6}}>
-                  ⚠ <b>{barrelCount} barrel{barrelCount!==1?"s":""}</b> use this caliber. Their caliber field will be cleared.
-                </div>
-              )}
               <p style={{fontSize:12,color:T.danger,marginBottom:20,fontWeight:500}}>⚠ This cannot be undone.</p>
               <button style={{...A.btnP,background:T.danger,marginBottom:8}} onClick={()=>{delCaliber(confDelCal);setConfDelCal(null);}}>Delete</button>
               <button style={A.btnG} onClick={()=>setConfDelCal(null)}>Cancel</button>
