@@ -443,25 +443,12 @@ function App(){
   const toggleDark=()=>{const n=!darkMode;setDarkMode(n);document.body.style.background=n?DARK.bg:HC.bg;try{localStorage.setItem("borely_dark",n?"1":"0");}catch{}};
   useEffect(()=>{document.body.style.background=T.bg;},[darkMode]);
 
-  // ── IAP / Trial — BETA_MODE=true bypasses all gates for testing ─────────────
-  const BETA_MODE=true;
-  const[isPaid,    setIsPaid]    =useState(()=>{try{return localStorage.getItem("borely_paid")==="1";}catch{return false;}});
-  const[trialStart,setTrialStart]=useState(()=>{try{const s=localStorage.getItem("borely_trial_start");if(s)return s;const d=toLocalDate();localStorage.setItem("borely_trial_start",d);return d;}catch{return toLocalDate();}});
-  const trialDaysUsed=Math.floor((new Date()-new Date(trialStart+"T12:00:00"))/86400000);
-  const trialDaysLeft=Math.max(0,7-trialDaysUsed);
-  const trialExpired=trialDaysLeft===0&&!isPaid;
-  const gated=!BETA_MODE&&!isPaid;
-  const canAddCaliber=!gated||(calibers.length===0);
-  const canAddBarrel =!gated||(barrels.filter(b=>b.status!=="transferred").length===0);
-  const[showPaywall, setShowPaywall]=useState(null);
-
   const[barrels,  setBarrels]  =useState(()=>{try{const s=localStorage.getItem("borely_barrels");return s?JSON.parse(s):[];}catch{return[];}});
   const[events,   setEvents]   =useState(()=>{try{const s=localStorage.getItem("borely_events");return s?JSON.parse(s):[];}catch{return[];}});
   const[calibers, setCalibers] =useState(()=>{try{const s=localStorage.getItem("borely_calibers");return s?JSON.parse(s):[];}catch{return[];}});
   const[loads,    setLoads]    =useState(()=>{try{const s=localStorage.getItem("borely_loads");return s?JSON.parse(s):[];}catch{return[];}});
   const[splash,   setSplash]   =useState(true);
 
-  useEffect(()=>{try{localStorage.setItem("borely_paid",isPaid?"1":"0");}catch{}},[isPaid]);
   useEffect(()=>{try{localStorage.setItem("borely_barrels",JSON.stringify(barrels));}catch{}},[barrels]);
   useEffect(()=>{try{localStorage.setItem("borely_events",JSON.stringify(events));}catch{}},[events]);
   useEffect(()=>{try{localStorage.setItem("borely_calibers",JSON.stringify(calibers));}catch{}},[calibers]);
@@ -539,6 +526,19 @@ function App(){
   const clearLF  =()=>{setFBul("");setFPow("");setFChg("");setFPrim("");setFBrass("");setFCoal("");setFSCbto("");setFVel("");};
 
   useEffect(()=>{if(!barrel&&view==="detail")setView("home");},[barrel,view]);
+
+  // ── IAP / Trial gates (BETA_MODE=true bypasses all for testing) ─────────────
+  const BETA_MODE=true;
+  const[isPaid,    setIsPaid]    =useState(()=>{try{return localStorage.getItem("borely_paid")==="1";}catch{return false;}});
+  const[trialStart,setTrialStart]=useState(()=>{try{const s=localStorage.getItem("borely_trial_start");if(s)return s;const d=toLocalDate();localStorage.setItem("borely_trial_start",d);return d;}catch{return toLocalDate();}});
+  const trialDaysUsed=Math.floor((new Date()-new Date(trialStart+"T12:00:00"))/86400000);
+  const trialDaysLeft=Math.max(0,7-trialDaysUsed);
+  const trialExpired=trialDaysLeft===0&&!isPaid;
+  const gated=!BETA_MODE&&!isPaid;
+  const canAddCaliber=!gated||(calibers.length===0);
+  const canAddBarrel =!gated||(barrels.filter(b=>b.status!=="transferred").length===0);
+  const[showPaywall, setShowPaywall]=useState(null);
+  useEffect(()=>{try{localStorage.setItem("borely_paid",isPaid?"1":"0");}catch{}},[isPaid]);
 
   if(splash)return <Splash onDone={()=>setSplash(false)}/>;
 
@@ -1341,37 +1341,25 @@ function App(){
         </div>
       )}
 
-      {/* ── Paywall sheet ── */}
       {showPaywall&&(
         <div style={{position:"fixed",inset:0,background:"rgba(10,9,8,.75)",display:"flex",alignItems:"flex-end",zIndex:300}}>
           <div style={{background:T.surf,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:maxW,margin:"0 auto",padding:"28px 24px 48px"}}>
             <div style={{textAlign:"center",marginBottom:20}}>
               <BoreLogo size={52}/>
               <div style={{fontSize:18,fontWeight:700,color:T.text,marginTop:12,marginBottom:6}}>Unlock Borely</div>
-              <div style={{fontSize:13,color:T.sub,lineHeight:1.65}}>
-                {showPaywall==="caliber"?"Add another caliber to your library.":"Add another barrel to track."}
-              </div>
+              <div style={{fontSize:13,color:T.sub,lineHeight:1.65}}>{showPaywall==="caliber"?"Add another caliber to your library.":"Add another barrel to track."}</div>
             </div>
             <div style={{background:T.bg,borderRadius:10,overflow:"hidden",marginBottom:16}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:`1px solid ${T.bdr}`}}>
-                <div>
-                  <div style={{fontSize:13,fontWeight:600,color:T.text}}>Borely — Full App</div>
-                  <div style={{fontSize:11,color:T.sub,marginTop:2}}>1 caliber + 1 barrel included</div>
-                </div>
+                <div><div style={{fontSize:13,fontWeight:600,color:T.text}}>Borely — Full App</div><div style={{fontSize:11,color:T.sub,marginTop:2}}>1 caliber + 1 barrel included</div></div>
                 <div style={{fontSize:17,fontWeight:700,fontFamily:T.mono,color:T.acc}}>$10</div>
               </div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px",borderBottom:`1px solid ${T.bdr}`}}>
-                <div>
-                  <div style={{fontSize:13,fontWeight:600,color:T.text}}>Additional Barrel</div>
-                  <div style={{fontSize:11,color:T.sub,marginTop:2}}>Unlock one more barrel</div>
-                </div>
+                <div><div style={{fontSize:13,fontWeight:600,color:T.text}}>Additional Barrel</div><div style={{fontSize:11,color:T.sub,marginTop:2}}>Unlock one more barrel</div></div>
                 <div style={{fontSize:17,fontWeight:700,fontFamily:T.mono,color:T.acc}}>$3</div>
               </div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 16px"}}>
-                <div>
-                  <div style={{fontSize:13,fontWeight:600,color:T.text}}>Additional Caliber</div>
-                  <div style={{fontSize:11,color:T.sub,marginTop:2}}>Unlock one more caliber</div>
-                </div>
+                <div><div style={{fontSize:13,fontWeight:600,color:T.text}}>Additional Caliber</div><div style={{fontSize:11,color:T.sub,marginTop:2}}>Unlock one more caliber</div></div>
                 <div style={{fontSize:17,fontWeight:700,fontFamily:T.mono,color:T.acc}}>$5</div>
               </div>
             </div>
@@ -1380,7 +1368,6 @@ function App(){
           </div>
         </div>
       )}
-
       {/* ── Confirm delete caliber ── */}
       {confDelCal&&(()=>{
         const cal=calibers.find(c=>c.id===confDelCal);
