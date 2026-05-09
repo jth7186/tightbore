@@ -450,6 +450,9 @@ function App(){
   const trialDaysUsed=Math.floor((new Date()-new Date(trialStart+"T12:00:00"))/86400000);
   const trialDaysLeft=Math.max(0,7-trialDaysUsed);
   const trialExpired=trialDaysLeft===0&&!isPaid;
+  const gated=!BETA_MODE&&!isPaid;
+  const canAddCaliber=!gated||(calibers.length===0);
+  const canAddBarrel =!gated||(barrels.filter(b=>b.status!=="transferred").length===0);
   const[showPaywall, setShowPaywall]=useState(null);
 
   const[barrels,  setBarrels]  =useState(()=>{try{const s=localStorage.getItem("borely_barrels");return s?JSON.parse(s):[];}catch{return[];}});
@@ -534,13 +537,6 @@ function App(){
   };
   const applyLoad=l=>{if(!l)return;setFBul(l.bullet||"");setFPow(l.powder||"");setFChg(l.charge||"");setFPrim(l.primer||"");setFBrass(l.brass||"");setFCoal(l.coal||"");setFSCbto(l.cbto||"");setFVel(l.velocity||"");};
   const clearLF  =()=>{setFBul("");setFPow("");setFChg("");setFPrim("");setFBrass("");setFCoal("");setFSCbto("");setFVel("");};
-
-  // Slots: 1 caliber + 1 barrel included with base purchase. Extra slots added via IAP.
-  const trialActive=!isPaid&&!trialExpired;
-  const caliberSlots=(isPaid||trialActive?1:0);
-  const barrelSlots =(isPaid||trialActive?1:0);
-  const canAddCaliber=BETA_MODE||(calibers.length<caliberSlots);
-  const canAddBarrel =BETA_MODE||(barrels.filter(b=>b.status!=="transferred").length<barrelSlots);
 
   useEffect(()=>{if(!barrel&&view==="detail")setView("home");},[barrel,view]);
 
