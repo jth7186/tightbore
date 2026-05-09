@@ -450,17 +450,9 @@ function App(){
   const trialDaysUsed=Math.floor((new Date()-new Date(trialStart+"T12:00:00"))/86400000);
   const trialDaysLeft=Math.max(0,7-trialDaysUsed);
   const trialExpired=trialDaysLeft===0&&!isPaid;
-  const trialActive=!isPaid&&!trialExpired;
-  // Slots: base purchase = 1 caliber + 1 barrel. Additional slots come from IAP (StoreKit, future).
-  const baseCaliberSlots=(isPaid||trialActive)?1:0;
-  const baseBarrelSlots =(isPaid||trialActive)?1:0;
-  // extraSlots will increment per IAP purchase when StoreKit is wired in
-  const extraCaliberSlots=0;
-  const extraBarrelSlots =0;
-  const caliberSlots=baseCaliberSlots+extraCaliberSlots;
-  const barrelSlots =baseBarrelSlots +extraBarrelSlots;
-  const canAddCaliber=BETA_MODE||(calibers.length<caliberSlots);
-  const canAddBarrel =BETA_MODE||(barrels.filter(b=>b.status!=="transferred").length<barrelSlots);
+  const gated=!BETA_MODE&&!isPaid;
+  const canAddCaliber=!gated||(calibers.length===0);
+  const canAddBarrel =!gated||(barrels.filter(b=>b.status!=="transferred").length===0);
   const[showPaywall, setShowPaywall]=useState(null);
 
   const[barrels,  setBarrels]  =useState(()=>{try{const s=localStorage.getItem("borely_barrels");return s?JSON.parse(s):[];}catch{return[];}});
