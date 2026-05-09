@@ -1037,7 +1037,10 @@ function App(){
         <div style={{padding:`16px ${pad}px 8px`,fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.10em",color:T.sub}}>Barrels</div>
         {barrels.length===0?(
           <div style={{padding:"60px 28px",textAlign:"center",display:"flex",flexDirection:"column",alignItems:"center",gap:16}}>
-            <div style={{fontSize:20,fontWeight:700,letterSpacing:"-0.01em",color:T.text}}>Welcome to Borely</div>
+            <div style={{fontSize:13,color:T.sub,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:-8}}>Welcome to</div>
+            <div style={{fontSize:32,fontWeight:800,letterSpacing:"0.14em",lineHeight:1,fontFamily:T.sans}}>
+              <span style={{color:T.text}}>BORE</span><span style={{color:"#2EC4B6"}}>LY</span>
+            </div>
             <div style={{fontSize:13,color:T.sub,lineHeight:1.7,maxWidth:280}}>Track every barrel, every round, every cleaning — all in one place.</div>
             {calibers.length===0
               ?<button onClick={()=>{setNewCalName("");setModal("caliber_form");}} style={{...A.btnP,width:"auto",padding:"12px 28px",fontSize:14,marginTop:4}}>Add Your First Caliber</button>
@@ -1161,37 +1164,15 @@ function App(){
             <select style={A.sel} value={bCalId} onChange={e=>{
               const v=e.target.value;
               setBCalId(v);
-              if(v==="other"){setBCal("");}
-              else if(v){const c=calibers.find(x=>x.id===v);if(c)setBCal(c.name);}
+              if(v){const c=calibers.find(x=>x.id===v);if(c)setBCal(c.name);}
               else{setBCal("");}
             }}>
               <option value="">Select caliber…</option>
               {calibers.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-              <option value="other">Other — enter manually</option>
             </select>
-
-            {/* Manual entry when "Other" selected */}
-            {bCalId==="other"&&(
-              <>
-                <input style={{...A.inp,marginTop:-8}} value={bCal} onChange={e=>setBCal(e.target.value)} placeholder="e.g. 6.5 Creedmoor"/>
-                {bCal.trim()&&(
-                  <div style={{background:T.amberBg,border:`1px solid ${T.amberBdr}`,borderRadius:6,padding:"10px 14px",marginTop:-8,marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
-                    <div style={{fontSize:12,color:T.amber,lineHeight:1.5}}>
-                      Add <b>{bCal.trim()}</b> to your load library?
-                    </div>
-                    <button onClick={()=>{
-                      if(!bCal.trim())return;
-                      if(calibers.some(c=>c.name.trim().toLowerCase()===bCal.trim().toLowerCase())){return;}
-                      const newId=uid();
-                      setCalibers(p=>[...p,{id:newId,name:bCal.trim(),created:toLocalDate()}]);
-                      setBCalId(newId);
-                    }} style={{background:T.amber,color:"#fff",border:"none",borderRadius:5,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>
-                      Add Caliber
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+            <div style={{fontSize:11,color:T.mut,marginTop:-10,marginBottom:14,lineHeight:1.5}}>
+              Don't see your caliber? Add it first using the <b style={{color:T.sub}}>+ Caliber</b> button.
+            </div>
 
             {/* Confirmation when library caliber is selected */}
             {bCalId&&bCalId!=="other"&&(
@@ -1293,7 +1274,7 @@ function App(){
               <div style={{display:"flex",flexDirection:"column",gap:9}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span style={{fontSize:12,color:T.sub}}>App</span>
-                  <span style={{fontSize:12,color:T.text,fontWeight:600}}>Borely&nbsp;1.0&nbsp;<span style={{fontWeight:400,color:T.sub}}>(20260506)</span></span>
+                  <span style={{fontSize:12,color:T.text,fontWeight:600}}>Borely&nbsp;1.0&nbsp;<span style={{fontWeight:400,color:T.sub}}>(20260509)</span></span>
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <span style={{fontSize:12,color:T.sub}}>Developer</span>
