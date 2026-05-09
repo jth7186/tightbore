@@ -167,7 +167,7 @@ function LineChart({data,xKey,yKey,color,yFmt,bdr,mut,mono}){
 }
 
 // ─── EventCard — outside App ──────────────────────────────────────────────────
-function EventCard({ev,baseline,onDel,onEdit,readOnly,T,calibers,loads,setLoads}){
+function EventCard({ev,baseline,onDel,readOnly,T}){
   const[open,setOpen]=useState(false);
   const del=e=>{e.stopPropagation();onDel();};
   if(ev.type==="session"){
@@ -193,39 +193,15 @@ function EventCard({ev,baseline,onDel,onEdit,readOnly,T,calibers,loads,setLoads}
           </div>
           <div style={{fontSize:16,fontWeight:700,fontFamily:T.mono,color:T.text,flexShrink:0}}>{ev.shots} rds</div>
           {expandable&&<div style={{color:T.mut,transform:open?"rotate(90deg)":"none",transition:"transform .15s",alignSelf:"center"}}><Ic.Chev/></div>}
-          {!readOnly&&onEdit&&<button onClick={e=>{e.stopPropagation();onEdit(ev);}} style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:11,padding:"2px 4px",flexShrink:0}}>Edit</button>}
           {!readOnly&&<button onClick={del} style={{background:"none",border:"none",color:T.mut,cursor:"pointer",padding:"2px 0 0 4px",display:"flex",alignSelf:"flex-start"}}><Ic.Trash/></button>}
         </div>
         {open&&expandable&&<div style={{background:T.bg,borderTop:`1px solid ${T.bdr2}`,padding:"12px 14px",display:"flex",flexDirection:"column",gap:7}}>
-          {(ev.conditions||ev.temperature||ev.altitude)&&(
-            <div style={{fontSize:12,color:T.sub}}>
-              <b style={{color:T.text,fontWeight:500}}>Conditions: </b>
-              {[ev.temperature?`${ev.temperature}°F`:"",ev.altitude?`${ev.altitude}ft elev`:"",ev.densityAlt?`DA ${parseInt(ev.densityAlt).toLocaleString()}ft`:"",ev.conditions].filter(Boolean).join(" · ")}
-            </div>
-          )}
+          {ev.conditions&&<div style={{fontSize:12,color:T.sub}}><b style={{color:T.text,fontWeight:500}}>Conditions: </b>{ev.conditions}</div>}
           {(ev.powder||ev.bullet)&&<div style={{fontSize:12,color:T.sub}}><b style={{color:T.text,fontWeight:500}}>Load: </b>{[ev.bullet,ev.powder,ev.charge?`@ ${ev.charge}gr`:""].filter(Boolean).join(" / ")}</div>}
           {ev.primer&&<div style={{fontSize:12,color:T.sub}}><b style={{color:T.text,fontWeight:500}}>Primer: </b>{ev.primer}</div>}
           {ev.brass&&<div style={{fontSize:12,color:T.sub}}><b style={{color:T.text,fontWeight:500}}>Brass: </b>{ev.brass}</div>}
           {(ev.coal||ev.sessionCbto)&&<div style={{fontSize:12,color:T.sub,fontFamily:T.mono}}><b style={{color:T.text,fontWeight:500,fontFamily:T.sans}}>Seating: </b>{ev.coal?`COAL ${ev.coal}" `:""}{ev.sessionCbto?`CBTO ${ev.sessionCbto}"`:""}</div>}
           {ev.sessionNotes&&<div style={{fontSize:12,color:T.sub,lineHeight:1.65}}><b style={{color:T.text,fontWeight:500}}>Notes: </b>{ev.sessionNotes}</div>}
-          {ev.modifiedAt&&<div style={{fontSize:11,color:T.mut,marginTop:4,fontStyle:"italic"}}>Modified {ev.modifiedAt}</div>}
-          {ev.bullet&&calibers&&loads&&setLoads&&(()=>{
-            const calObj=calibers.find(c=>c.name&&c.name.trim().toLowerCase()===(ev.caliber||"").trim().toLowerCase());
-            if(!calObj)return null;
-            const exists=loads.some(l=>l.caliberId===calObj.id&&(l.bullet||"").trim().toLowerCase()===(ev.bullet||"").trim().toLowerCase()&&(l.powder||"").trim().toLowerCase()===(ev.powder||"").trim().toLowerCase()&&(l.charge||"").trim()===(ev.charge||"").trim());
-            if(exists)return null;
-            return(
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:6,paddingTop:8,borderTop:`1px solid ${T.bdr2}`}}>
-                <div style={{fontSize:11,color:T.sub}}>Save this load to library?</div>
-                <button onClick={e=>{
-                  e.stopPropagation();
-                  const name=`${(ev.bullet||"").trim()}${ev.powder?` / ${ev.powder.trim()}`:""}`;
-                  const uid2=Math.random().toString(36).slice(2);
-                  setLoads(p=>[...p,{id:uid2,caliberId:calObj.id,caliber:calObj.name,name,bullet:ev.bullet||"",powder:ev.powder||"",charge:ev.charge||"",primer:ev.primer||"",brass:ev.brass||"",coal:ev.coal||"",cbto:ev.sessionCbto||"",velocity:ev.velocity?String(Math.round(ev.velocity)):"",notes:"",created:new Date().toISOString().slice(0,10)}]);
-                }} style={{background:T.acc,color:"#fff",border:"none",borderRadius:5,padding:"5px 10px",fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap"}}>+ Save Load</button>
-              </div>
-            );
-          })()}
         </div>}
       </div>
     );
@@ -256,18 +232,15 @@ function EventCard({ev,baseline,onDel,onEdit,readOnly,T,calibers,loads,setLoads}
   if(ev.type==="cbto"){
     const has=ev.comparator||ev.caliper||ev.notes;
     const delta=baseline&&ev.id!==baseline.id?(parseFloat(ev.measurement)-parseFloat(baseline.measurement)).toFixed(4):null;
-    const incomplete=!ev.comparator||!ev.caliper;
     return(
-      <div style={{background:T.surf,border:`1px solid ${incomplete?T.amberBdr:T.accBdr}`,borderRadius:8,overflow:"hidden",marginBottom:8}}>
+      <div style={{background:T.surf,border:`1px solid ${T.accBdr}`,borderRadius:8,overflow:"hidden",marginBottom:8}}>
         <div style={{display:"flex",alignItems:"flex-start",padding:"12px 14px",gap:10,cursor:has?"pointer":"default"}} onClick={()=>has&&setOpen(v=>!v)}>
           <div style={{flex:1}}>
             <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <span style={{fontSize:17,fontWeight:700,fontFamily:T.mono,color:T.text}}>{fmtCBTO(ev.measurement)}</span>
               <Badge label="CBTO" color={T.acc} bg={T.accBg} border={T.accBdr}/>
-              {incomplete&&<Badge label="⚠ Missing tools" color={T.amber} bg={T.amberBg} border={T.amberBdr}/>}
             </div>
             <div style={{fontSize:11,color:T.sub,marginTop:3}}>{fmtDate(ev.date)}{delta&&parseFloat(delta)>0?<span style={{fontFamily:T.mono}}> · +{delta}" from baseline</span>:""}</div>
-            {incomplete&&<div style={{fontSize:11,color:T.amber,marginTop:3}}>Comparator/caliper not recorded — trend data unreliable</div>}
           </div>
           {has&&<div style={{color:T.mut,transform:open?"rotate(90deg)":"none",transition:"transform .15s",alignSelf:"center"}}><Ic.Chev/></div>}
           {!readOnly&&<button onClick={del} style={{background:"none",border:"none",color:T.mut,cursor:"pointer",padding:"2px 0 0 4px",display:"flex",alignSelf:"flex-start"}}><Ic.Trash/></button>}
@@ -402,8 +375,8 @@ function exportCSV(barrel,events){
   const cln =events.filter(e=>e.barrelId===barrel.id&&e.type==="clean").sort((a,b)=>b.date.localeCompare(a.date));
   const cbto=events.filter(e=>e.barrelId===barrel.id&&e.type==="cbto").sort((a,b)=>b.date.localeCompare(a.date));
   const rows=[
-    ["SHOT LOG"],["Date","Shots","Suppressed","Load","Bullet","Powder","Charge (gr)","Primer","Brass","COAL","CBTO","Velocity (fps)","ES","SD","Group (in)","Distance","Conditions","Notes","Modified"],
-    ...sess.map(s=>[fmtDate(s.date),s.shots,s.suppressed?"Yes":"",s.loadName||"",s.bullet||"",s.powder||"",s.charge||"",s.primer||"",s.brass||"",s.coal||"",s.sessionCbto||"",s.velocity||"",s.es||"",s.sd||"",s.groupSize||"",s.groupDistance?`${s.groupDistance}${s.groupUnit||"yd"}`:"",s.conditions||"",s.sessionNotes||"",s.modifiedAt||""]),
+    ["SHOT LOG"],["Date","Shots","Suppressed","Load","Bullet","Powder","Charge (gr)","Primer","Brass","COAL","CBTO","Velocity (fps)","ES","SD","Group (in)","Distance","Conditions","Notes"],
+    ...sess.map(s=>[fmtDate(s.date),s.shots,s.suppressed?"Yes":"",s.loadName||"",s.bullet||"",s.powder||"",s.charge||"",s.primer||"",s.brass||"",s.coal||"",s.sessionCbto||"",s.velocity||"",s.es||"",s.sd||"",s.groupSize||"",s.groupDistance?`${s.groupDistance}${s.groupUnit||"yd"}`:"",s.conditions||"",s.sessionNotes||""]),
     [""],["CLEANING LOG"],["Date","Solvents","Method","Passes","Observations"],
     ...cln.map(c=>[fmtDate(c.date),c.solvents||"",c.method||"",c.passes||"",c.observations||""]),
     [""],["CBTO / LANDS"],["Date","CBTO (in)","Comparator","Caliper","Notes"],
@@ -424,181 +397,12 @@ function exportPDF(barrel,events){
   const pct=barrel.lifeRounds?Math.min(100,Math.round((total/barrel.lifeRounds)*100)):null;
   const lcolor=pct===null?"#2e4e24":pct<60?"#2e4e24":pct<80?"#5a4a00":pct<90?"#6a2e00":"#6a0e0e";
   const tr=(cells,tag="td")=>cells.map(c=>`<${tag}>${c}</${tag}>`).join("");
-  const modSess=sess.filter(s=>s.modifiedAt);
-  const sRows=sess.map(s=>`<tr>${tr([fmtDate(s.date),s.shots,s.loadName||"",s.velocity?Math.round(s.velocity)+" fps":"",s.es||"",s.sd||"",s.groupSize?s.groupSize+'"@'+(s.groupDistance||"?")+(s.groupUnit||"yd"):"",s.suppressed?"✓":"",s.bullet||"",s.powder||(s.charge?s.charge+"gr":""),s.primer||"",s.brass||"",s.conditions||"",s.modifiedAt?'<span style="color:#b8903a" title="Modified '+s.modifiedAt+'">&#9998;</span>':''])}</tr>`).join("");
+  const sRows=sess.map(s=>`<tr>${tr([fmtDate(s.date),s.shots,s.loadName||"",s.velocity?Math.round(s.velocity)+" fps":"",s.es||"",s.sd||"",s.groupSize?`${s.groupSize}"@${s.groupDistance||"?"}${s.groupUnit||"yd"}`:"",s.suppressed?"✓":"",s.bullet||"",s.powder||(s.charge?`${s.charge}gr`:""),s.primer||"",s.brass||"",s.conditions||""])}</tr>`).join("");
   const cRows=cln.map(c=>`<tr>${tr([fmtDate(c.date),c.solvents||"—",c.method||"—",c.passes||"—",c.observations||"—"])}</tr>`).join("");
   const rRows=[...cbtos].reverse().map(r=>`<tr>${tr([fmtDate(r.date),`<span style="font-family:monospace">${parseFloat(r.measurement).toFixed(4)}"</span>`,r.comparator||"—",r.caliper||"—",r.notes||"—"])}</tr>`).join("");
-  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Borely · ${barrel.name}</title><style>body{font-family:system-ui,sans-serif;margin:40px;font-size:11px;color:#0a0908;line-height:1.5}.brand{display:flex;align-items:center;gap:10px;margin-bottom:4px}.brand img{width:40px;height:40px;border-radius:50%}.brand-name{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#2e4e24;line-height:1}.brand-tag{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#888070;margin-top:3px}h1{font-size:22px;font-weight:700;margin:0 0 3px}h2{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3a3630;margin:22px 0 8px;border-bottom:1px solid #888070;padding-bottom:5px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px;background:#f0eee8;border-radius:4px;margin-bottom:6px}.sv{font-size:16px;font-weight:700;font-family:monospace}.sl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;margin-top:2px}.bar{height:5px;background:#b0a898;border-radius:3px;margin:6px 0 10px}.barfill{height:100%;border-radius:3px}table{width:100%;border-collapse:collapse;font-size:10px}th{text-align:left;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;border-bottom:1px solid #888070}td{padding:5px 6px;border-bottom:1px solid #b0a898;vertical-align:top}@media print{body{margin:20px}}</style></head><body><div class="brand"><img src="${BORELY_LOGO_URI}"/><div><div class="brand-name"><span>BORE</span><span style="color:#2EC4B6">LY</span></div><div class="brand-tag">Barrel life, precisely tracked</div></div></div><h1>${barrel.name}</h1><div style="font-size:11px;color:#3a3630;margin-bottom:14px">${[barrel.caliber,barrel.notes].filter(Boolean).join("·")||"—"}·${new Date().toLocaleDateString()}</div>${barrel.status==="transferred"?`<div style="background:#f0ddb8;border:1px solid #b8903a;border-radius:4px;padding:8px 12px;margin-bottom:14px;font-size:10px;color:#6a4a10"><b>TRANSFERRED</b>·${fmtDate(barrel.transferredDate)}</div>`:""}<div class="grid"><div><div class="sv">${total.toLocaleString()}</div><div class="sl">Total Rounds</div></div><div><div class="sv">${sess.length}</div><div class="sl">Sessions</div></div><div><div class="sv">${cln.length}</div><div class="sl">Cleanings</div></div><div><div class="sv">${rsc.toLocaleString()}</div><div class="sl">Since Clean</div></div>${cur?`<div><div class="sv" style="font-family:monospace">${parseFloat(cur.measurement).toFixed(4)}"</div><div class="sl">CBTO</div></div>`:""}${eros&&parseFloat(eros)>0?`<div><div class="sv" style="font-family:monospace">+${eros}"</div><div class="sl">Erosion</div></div>`:""}${pct!==null?`<div><div class="sv" style="color:${lcolor}">${pct}%</div><div class="sl">Life Used</div></div>`:""}${barrel.lifeRounds?`<div><div class="sv">${Math.max(0,barrel.lifeRounds-total).toLocaleString()}</div><div class="sl">Remaining</div></div>`:""}</div>${pct!==null?`<div class="bar"><div class="barfill" style="width:${pct}%;background:${lcolor}"></div></div>`:""}<h2>Shot Log</h2><table><thead><tr>${tr(["Date","Shots","Load","Vel","ES","SD","Group","Supp","Bullet","Powder","Primer","Brass","Conditions","&#9998;"],"th")}</tr></thead><tbody>${sRows||'<tr><td colspan="14" style="color:#6a6460">No sessions</td></tr>'}</tbody></table><h2>Cleaning Log</h2><table><thead><tr>${tr(["Date","Solvents","Method","Passes","Observations"],"th")}</tr></thead><tbody>${cRows||`<tr><td colspan="5" style="color:#6a6460">No cleanings</td></tr>`}</tbody></table><h2>CBTO / Lands</h2><table><thead><tr>${tr(["Date","CBTO","Comparator","Caliper","Notes"],"th")}</tr></thead><tbody>${rRows||`<tr><td colspan="5" style="color:#6a6460">No readings</td></tr>`}</tbody></table>${modSess.length>0?'<h2>Change Log</h2><p style="font-size:10px;color:#6a6460;margin-bottom:8px">Sessions edited after initial entry. Atmospheric changes (temperature, altitude, density altitude, wind/conditions) are excluded.</p><table><thead><tr><th style="text-align:left;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;border-bottom:1px solid #888070">Session Date</th><th style="text-align:left;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;border-bottom:1px solid #888070">Modified On</th><th style="text-align:left;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;border-bottom:1px solid #888070">Fields Changed</th></tr></thead><tbody>'+modSess.map(s=>{const ch=[];if(s.bullet||s.powder||s.charge||s.primer||s.brass||s.coal||s.sessionCbto)ch.push("Load data");if(s.velocity||s.es||s.sd)ch.push("Chronograph");if(s.groupSize)ch.push("Group size");if(s.suppressed!==undefined)ch.push("Suppressor");return '<tr><td style="padding:5px 6px;border-bottom:1px solid #b0a898;font-size:10px">'+fmtDate(s.date)+'</td><td style="padding:5px 6px;border-bottom:1px solid #b0a898;font-size:10px">'+s.modifiedAt+'</td><td style="padding:5px 6px;border-bottom:1px solid #b0a898;font-size:10px">'+( ch.length?ch.join(", "):"Data updated")+'</td></tr>';}).join("")+'</tbody></table>':""}
-</body></html>`;
+  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Borely · ${barrel.name}</title><style>body{font-family:system-ui,sans-serif;margin:40px;font-size:11px;color:#0a0908;line-height:1.5}.brand{display:flex;align-items:center;gap:10px;margin-bottom:4px}.brand img{width:40px;height:40px;border-radius:50%}.brand-name{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#2e4e24;line-height:1}.brand-tag{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#888070;margin-top:3px}h1{font-size:22px;font-weight:700;margin:0 0 3px}h2{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3a3630;margin:22px 0 8px;border-bottom:1px solid #888070;padding-bottom:5px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px;background:#f0eee8;border-radius:4px;margin-bottom:6px}.sv{font-size:16px;font-weight:700;font-family:monospace}.sl{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;margin-top:2px}.bar{height:5px;background:#b0a898;border-radius:3px;margin:6px 0 10px}.barfill{height:100%;border-radius:3px}table{width:100%;border-collapse:collapse;font-size:10px}th{text-align:left;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;border-bottom:1px solid #888070}td{padding:5px 6px;border-bottom:1px solid #b0a898;vertical-align:top}@media print{body{margin:20px}}</style></head><body><div class="brand"><img src="${BORELY_LOGO_URI}"/><div><div class="brand-name"><span>BORE</span><span style="color:#2EC4B6">LY</span></div><div class="brand-tag">Barrel life, precisely tracked</div></div></div><h1>${barrel.name}</h1><div style="font-size:11px;color:#3a3630;margin-bottom:14px">${[barrel.caliber,barrel.notes].filter(Boolean).join("·")||"—"}·${new Date().toLocaleDateString()}</div>${barrel.status==="transferred"?`<div style="background:#f0ddb8;border:1px solid #b8903a;border-radius:4px;padding:8px 12px;margin-bottom:14px;font-size:10px;color:#6a4a10"><b>TRANSFERRED</b>·${fmtDate(barrel.transferredDate)}</div>`:""}<div class="grid"><div><div class="sv">${total.toLocaleString()}</div><div class="sl">Total Rounds</div></div><div><div class="sv">${sess.length}</div><div class="sl">Sessions</div></div><div><div class="sv">${cln.length}</div><div class="sl">Cleanings</div></div><div><div class="sv">${rsc.toLocaleString()}</div><div class="sl">Since Clean</div></div>${cur?`<div><div class="sv" style="font-family:monospace">${parseFloat(cur.measurement).toFixed(4)}"</div><div class="sl">CBTO</div></div>`:""}${eros&&parseFloat(eros)>0?`<div><div class="sv" style="font-family:monospace">+${eros}"</div><div class="sl">Erosion</div></div>`:""}${pct!==null?`<div><div class="sv" style="color:${lcolor}">${pct}%</div><div class="sl">Life Used</div></div>`:""}${barrel.lifeRounds?`<div><div class="sv">${Math.max(0,barrel.lifeRounds-total).toLocaleString()}</div><div class="sl">Remaining</div></div>`:""}</div>${pct!==null?`<div class="bar"><div class="barfill" style="width:${pct}%;background:${lcolor}"></div></div>`:""}<h2>Shot Log</h2><table><thead><tr>${tr(["Date","Shots","Load","Vel","ES","SD","Group","Supp","Bullet","Powder","Primer","Brass","Conditions"],"th")}</tr></thead><tbody>${sRows||`<tr><td colspan="13" style="color:#6a6460">No sessions</td></tr>`}</tbody></table><h2>Cleaning Log</h2><table><thead><tr>${tr(["Date","Solvents","Method","Passes","Observations"],"th")}</tr></thead><tbody>${cRows||`<tr><td colspan="5" style="color:#6a6460">No cleanings</td></tr>`}</tbody></table><h2>CBTO / Lands</h2><table><thead><tr>${tr(["Date","CBTO","Comparator","Caliper","Notes"],"th")}</tr></thead><tbody>${rRows||`<tr><td colspan="5" style="color:#6a6460">No readings</td></tr>`}</tbody></table></body></html>`;
   const w=window.open(URL.createObjectURL(new Blob([html],{type:"text/html"})));
   if(w)setTimeout(()=>w.print(),600);
-}
-
-function exportLoadCSV(loads, calibers, calFilter){
-  const filteredLoads = calFilter
-    ? loads.filter(l=>l.caliberId===calFilter)
-    : loads;
-  const calName = calFilter
-    ? (calibers.find(c=>c.id===calFilter)?.name||"Unknown")
-    : "All Calibers";
-  const headers = ["Caliber","Name","Bullet","Powder","Charge (gr)","Primer","Brass","COAL","CBTO","Velocity (fps)","Notes","Date Added"];
-  const rows = filteredLoads.map(l=>[
-    l.caliber||"",l.name||"",l.bullet||"",l.powder||"",l.charge||"",
-    l.primer||"",l.brass||"",l.coal||"",l.cbto||"",l.velocity||"",
-    l.notes||"",l.created||""
-  ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
-  const csv = [headers.join(","),...rows].join("\n");
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  a.download=`Borely-Loads-${calName.replace(/[^a-zA-Z0-9]/g,"-")}.csv`;
-  a.click();
-}
-
-function exportLoadPDF(loads, calibers, calFilter, logoUri){
-  const filteredLoads = calFilter
-    ? loads.filter(l=>l.caliberId===calFilter)
-    : loads;
-  const calName = calFilter
-    ? (calibers.find(c=>c.id===calFilter)?.name||"Unknown")
-    : "All Calibers";
-
-  const groupedByCal = {};
-  filteredLoads.forEach(l=>{
-    const key = l.caliber||"Unknown";
-    if(!groupedByCal[key]) groupedByCal[key]=[];
-    groupedByCal[key].push(l);
-  });
-
-  const tr=(cols,tag="td")=>cols.map(c=>`<${tag}>${c||"—"}</${tag}>`).join("");
-
-  const sections = Object.entries(groupedByCal).map(([cal,calLoads])=>`
-    <h2>${cal}</h2>
-    <table>
-      <thead><tr>${tr(["Name","Bullet","Powder","Charge","Primer","Brass","COAL","CBTO","Velocity","Notes"],"th")}</tr></thead>
-      <tbody>${calLoads.map(l=>`<tr>${tr([l.name,l.bullet,l.powder,l.charge?l.charge+"gr":"",l.primer,l.brass,l.coal,l.cbto,l.velocity?l.velocity+" fps":"",l.notes])}</tr>`).join("")}</tbody>
-    </table>`).join("");
-
-  const html=`<!DOCTYPE html><html><head><meta charset="utf-8"/>
-  <title>Borely · Load Library · ${calName}</title>
-  <style>
-    body{font-family:system-ui,sans-serif;margin:40px;font-size:11px;color:#0a0908;line-height:1.5}
-    .brand{display:flex;align-items:center;gap:10px;margin-bottom:4px}
-    .brand img{width:40px;height:40px;border-radius:50%}
-    .brand-name{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;line-height:1}
-    .brand-name .teal{color:#2EC4B6}
-    .brand-tag{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#888070;margin-top:3px}
-    h1{font-size:22px;font-weight:700;margin:0 0 3px}
-    h2{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3a3630;margin:22px 0 8px;border-bottom:1px solid #888070;padding-bottom:5px}
-    table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:6px}
-    th{text-align:left;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;border-bottom:1px solid #888070}
-    td{padding:5px 6px;border-bottom:1px solid #b0a898;vertical-align:top}
-    .meta{font-size:11px;color:#3a3630;margin-bottom:20px}
-    @media print{body{margin:20px}}
-  </style></head><body>
-  <div class="brand">
-    <img src="${logoUri}"/>
-    <div>
-      <div class="brand-name"><span>BORE</span><span class="teal">LY</span></div>
-      <div class="brand-tag">Barrel life, precisely tracked</div>
-    </div>
-  </div>
-  <h1>Load Library</h1>
-  <div class="meta">${calName} · ${new Date().toLocaleDateString()} · ${filteredLoads.length} load${filteredLoads.length!==1?"s":""}</div>
-  ${sections}
-  </body></html>`;
-
-  const w=window.open(URL.createObjectURL(new Blob([html],{type:"text/html"})));
-  setTimeout(()=>{try{w.print();}catch(e){}},600);
-}
-
-function exportMultiBarrelCSV(selectedBarrels, allEvents){
-  const rows = [];
-  rows.push(["Barrel","Caliber","Date","Type","Shots","Load","Bullet","Powder","Charge","Primer","Brass","COAL","Velocity","ES","SD","Group","Suppressed","Conditions","Notes"]);
-  selectedBarrels.forEach(barrel=>{
-    const bEvents = allEvents.filter(e=>e.barrelId===barrel.id);
-    bEvents.sort((a,b)=>a.date.localeCompare(b.date));
-    bEvents.forEach(ev=>{
-      if(ev.type==="session"){
-        rows.push([
-          barrel.name, barrel.caliber||"", ev.date, "Session",
-          ev.shots||"", ev.loadName||"", ev.bullet||"", ev.powder||"",
-          ev.charge||"", ev.primer||"", ev.brass||"", ev.coal||"",
-          ev.velocity||"", ev.es||"", ev.sd||"", ev.group||"",
-          ev.suppressed?"Yes":"No", ev.conditions||"", ev.notes||""
-        ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(","));
-      }
-    });
-  });
-  const csv = rows.map(r=>Array.isArray(r)?r.join(","):r).join("\n");
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));
-  const names = selectedBarrels.length===1?selectedBarrels[0].name.replace(/[^a-zA-Z0-9]/g,"-"):"Multiple-Barrels";
-  a.download=`Borely-${names}.csv`;
-  a.click();
-}
-
-function exportMultiBarrelPDF(selectedBarrels, allEvents, logoUri){
-  const lcolor=pct=>pct<60?"#4a8a3a":pct<80?"#b8903a":pct<90?"#c05a20":"#c03020";
-
-  const barrelSections = selectedBarrels.map(barrel=>{
-    const bEvents = allEvents.filter(e=>e.barrelId===barrel.id);
-    const sess = bEvents.filter(e=>e.type==="session").sort((a,b)=>a.date.localeCompare(b.date));
-    const cln  = bEvents.filter(e=>e.type==="clean").sort((a,b)=>a.date.localeCompare(b.date));
-    const cbtos= bEvents.filter(e=>e.type==="cbto").sort((a,b)=>a.date.localeCompare(b.date));
-    const total= sess.reduce((s,e)=>s+(parseInt(e.shots)||0),0);
-    const lastClean = [...bEvents].reverse().find(e=>e.type==="clean");
-    const sinceClean= lastClean
-      ? sess.filter(e=>e.date>=lastClean.date).reduce((s,e)=>s+(parseInt(e.shots)||0),0)
-      : total;
-    const cur = cbtos[cbtos.length-1];
-    const bas = cbtos[0];
-    const pct = barrel.lifeRounds?Math.min(100,Math.round((total/barrel.lifeRounds)*100)):null;
-    const tr=(cols,tag="td")=>cols.map(c=>`<${tag} style="padding:5px 6px;border-bottom:1px solid #b0a898;font-size:10px">${c||"—"}</${tag}>`).join("");
-
-    const sRows = sess.map(e=>`<tr>${tr([e.date,e.shots,e.loadName||"",e.velocity||"",e.es||"",e.sd||"",e.group?e.group+'"':"",e.suppressed?"Yes":"",e.bullet||"",e.powder||"",e.primer||"",e.brass||"",e.conditions||""])}</tr>`).join("");
-    const cRows = cln.map(e=>`<tr>${tr([e.date,e.solvents||"",e.method||"",e.passes||"",e.observations||""])}</tr>`).join("");
-    const rRows = cbtos.map(e=>`<tr>${tr([e.date,parseFloat(e.measurement).toFixed(4)+'"',e.comparator||"",e.caliper||"",e.notes||""])}</tr>`).join("");
-
-    return `
-    <div style="page-break-after:always">
-      <h1 style="font-size:22px;font-weight:700;margin:0 0 3px">${barrel.name}</h1>
-      <div style="font-size:11px;color:#3a3630;margin-bottom:14px">${[barrel.caliber,barrel.notes].filter(Boolean).join(" · ")||"—"} · ${new Date().toLocaleDateString()}</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:14px;background:#f0eee8;border-radius:4px;margin-bottom:6px">
-        <div><div style="font-size:16px;font-weight:700;font-family:monospace">${total.toLocaleString()}</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;margin-top:2px">Total Rounds</div></div>
-        <div><div style="font-size:16px;font-weight:700;font-family:monospace">${sess.length}</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;margin-top:2px">Sessions</div></div>
-        <div><div style="font-size:16px;font-weight:700;font-family:monospace">${cln.length}</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;margin-top:2px">Cleanings</div></div>
-        <div><div style="font-size:16px;font-weight:700;font-family:monospace">${sinceClean.toLocaleString()}</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;margin-top:2px">Since Clean</div></div>
-        ${cur?`<div><div style="font-size:16px;font-weight:700;font-family:monospace">${parseFloat(cur.measurement).toFixed(4)}"</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;margin-top:2px">CBTO</div></div>`:""}
-        ${pct!==null?`<div><div style="font-size:16px;font-weight:700;color:${lcolor(pct)}">${pct}%</div><div style="font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;margin-top:2px">Life Used</div></div>`:""}
-      </div>
-      ${pct!==null?`<div style="height:5px;background:#b0a898;border-radius:3px;margin:0 0 14px"><div style="height:100%;width:${pct}%;background:${lcolor(pct)};border-radius:3px"></div></div>`:""}
-      <h2 style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3a3630;margin:16px 0 6px;border-bottom:1px solid #888070;padding-bottom:4px">Shot Log</h2>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr>${["Date","Shots","Load","Vel","ES","SD","Group","Supp","Bullet","Powder","Primer","Brass","Conditions"].map(h=>`<th style="text-align:left;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;border-bottom:1px solid #888070">${h}</th>`).join("")}</tr></thead>
-        <tbody>${sRows||`<tr><td colspan="13" style="padding:8px 6px;font-size:10px;color:#6a6460">No sessions</td></tr>`}</tbody>
-      </table>
-      <h2 style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3a3630;margin:16px 0 6px;border-bottom:1px solid #888070;padding-bottom:4px">Cleaning Log</h2>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr>${["Date","Solvents","Method","Passes","Observations"].map(h=>`<th style="text-align:left;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;border-bottom:1px solid #888070">${h}</th>`).join("")}</tr></thead>
-        <tbody>${cRows||`<tr><td colspan="5" style="padding:8px 6px;font-size:10px;color:#6a6460">No cleanings</td></tr>`}</tbody>
-      </table>
-      <h2 style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:#3a3630;margin:16px 0 6px;border-bottom:1px solid #888070;padding-bottom:4px">CBTO / Lands</h2>
-      <table style="width:100%;border-collapse:collapse">
-        <thead><tr>${["Date","CBTO","Comparator","Caliper","Notes"].map(h=>`<th style="text-align:left;padding:5px 6px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:#3a3630;border-bottom:1px solid #888070">${h}</th>`).join("")}</tr></thead>
-        <tbody>${rRows||`<tr><td colspan="5" style="padding:8px 6px;font-size:10px;color:#6a6460">No readings</td></tr>`}</tbody>
-      </table>
-    </div>`;
-  }).join("");
-
-  const doc=`<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Borely Export</title>
-  <style>body{font-family:system-ui,sans-serif;margin:40px;font-size:11px;color:#0a0908;line-height:1.5}.brand{display:flex;align-items:center;gap:10px;margin-bottom:24px}.brand img{width:40px;height:40px;border-radius:50%}.brand-name{font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;line-height:1}.teal{color:#2EC4B6}.brand-tag{font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#888070;margin-top:3px}@media print{body{margin:20px}}</style>
-  </head><body>
-  <div class="brand"><img src="${logoUri}"/><div><div class="brand-name"><span>BORE</span><span class="teal">LY</span></div><div class="brand-tag">Barrel life, precisely tracked</div></div></div>
-  ${barrelSections}
-  </body></html>`;
-
-  const w=window.open(URL.createObjectURL(new Blob([doc],{type:"text/html"})));
-  setTimeout(()=>{try{w.print();}catch(e){}},600);
 }
 
 function exportBarrelPack(barrel,events){
@@ -660,7 +464,6 @@ function App(){
   const[confDelLoad,  setConfDelLoad]  =useState(null);
   const[fabMenu,      setFabMenu]      =useState(false);
   const[fromDetail,   setFromDetail]   =useState(false);
-  const[editingEvId,  setEditingEvId]  =useState(null);
   // session
   const[fShots,setFShots]=useState(1);
   const[fDate, setFDate] =useState(toLocalDate());
@@ -672,9 +475,6 @@ function App(){
   const[fVel,  setFVel]  =useState("");const[fES,setFES]=useState("");const[fSD,setFSD]=useState("");
   const[fGrp,  setFGrp]  =useState("");const[fGrpD,setFGrpD]=useState("");const[fGrpU,setFGrpU]=useState("yd");
   const[fCond, setFCond] =useState("");const[fNts,setFNts]=useState("");
-  const[fTemp, setFTemp] =useState("");const[fAlt,setFAlt]=useState("");
-  const[fDensityAlt,setFDensityAlt]=useState("");
-  const[wxLoading,setWxLoading]=useState(false);const[wxErr,setWxErr]=useState("");
   const[fTgt,  setFTgt]  =useState(null);const[evType,setEvType]=useState("session");
   // clean
   const[cDate, setCDate] =useState(toLocalDate());const[cQuick,setCQuick]=useState(true);
@@ -738,9 +538,6 @@ function App(){
   const canAddCaliber=!gated||(calibers.length===0);
   const canAddBarrel =!gated||(barrels.filter(b=>b.status!=="transferred").length===0);
   const[showPaywall, setShowPaywall]=useState(null);
-  const[showExport,  setShowExport]  =useState(false);
-  const[expBarrels,  setExpBarrels]  =useState([]);
-  const[expCalibers, setExpCalibers] =useState([]);
   useEffect(()=>{try{localStorage.setItem("borely_paid",isPaid?"1":"0");}catch{}},[isPaid]);
 
   if(splash)return <Splash onDone={()=>setSplash(false)}/>;
@@ -749,62 +546,7 @@ function App(){
   const calLoads =tgtBarrel?.caliber?loadsForCal(tgtBarrel.caliber):[];
 
   // openers
-  const calcDensityAlt=(tempF,altFt)=>{
-    // Standard formula: DA = alt + 120 × (OAT_C - ISA_C at altitude)
-    const oatC=(tempF-32)*5/9;
-    const isaC=15-(altFt*0.001981);
-    return Math.round(altFt+120*(oatC-isaC));
-  };
-  const fetchWeather=async()=>{
-    setWxLoading(true);setWxErr("");
-    try{
-      const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:8000}));
-      const {latitude:lat,longitude:lon}=pos.coords;
-      const ptRes=await fetch(`https://api.weather.gov/points/${lat.toFixed(4)},${lon.toFixed(4)}`);
-      if(!ptRes.ok)throw new Error("Station lookup failed");
-      const ptData=await ptRes.json();
-      const stationsUrl=ptData.properties.observationStations;
-      const stRes=await fetch(stationsUrl);
-      if(!stRes.ok)throw new Error("No stations found");
-      const stData=await stRes.json();
-      const stationId=stData.observationStations[0].split("/").pop();
-      const obRes=await fetch(`https://api.weather.gov/stations/${stationId}/observations/latest`);
-      if(!obRes.ok)throw new Error("Observation fetch failed");
-      const obData=await obRes.json();
-      const props=obData.properties;
-      const tempC=props.temperature?.value;
-      const elevM=props.elevation?.value??ptData.properties.relativeLocation?.geometry?.coordinates?.[1]??null;
-      let fetchedTempF=null, fetchedAltFt=null;
-      if(tempC!==null&&tempC!==undefined){
-        fetchedTempF=Math.round(tempC*9/5+32);
-        setFTemp(String(fetchedTempF));
-      }
-      if(elevM!==null&&elevM!==undefined){
-        fetchedAltFt=Math.round(elevM*3.28084);
-        setFAlt(String(fetchedAltFt));
-      }
-      if(fetchedTempF!==null&&fetchedAltFt!==null){
-        const da=calcDensityAlt(fetchedTempF,fetchedAltFt);
-        setFDensityAlt(String(da));
-      }
-      if(props.windSpeed?.value){
-        const windMph=Math.round(props.windSpeed.value*0.621371);
-        const windDir=props.windDirection?.value?compassDir(props.windDirection.value):"";
-        setFCond(prev=>{
-          const base=`${windMph}mph${windDir?" "+windDir:""}`;
-          return prev?prev+", "+base:base;
-        });
-      }
-    }catch(e){
-      if(e.code===1)setWxErr("Location access denied.");
-      else setWxErr("Weather unavailable — enter manually.");
-    }finally{setWxLoading(false);}
-  };
-  const compassDir=deg=>{
-    const dirs=["N","NE","E","SE","S","SW","W","NW"];
-    return dirs[Math.round(deg/45)%8];
-  };
-  const resetSess=()=>{setEditingEvId(null);setFShots(1);setFDate(toLocalDate());setFSupp(false);setFLoadSel("manual");clearLF();setFES("");setFSD("");setFGrp("");setFGrpD("");setFGrpU("yd");setFTemp("");setFAlt("");setFDensityAlt("");setFCond("");setFNts("");setWxErr("");};
+  const resetSess=()=>{setFShots(1);setFDate(toLocalDate());setFSupp(false);setFLoadSel("manual");clearLF();setFES("");setFSD("");setFGrp("");setFGrpD("");setFGrpU("yd");setFCond("");setFNts("");};
   const resetClean=()=>{setCDate(toLocalDate());setCQuick(true);setCSolv("");setCMeth("");setCPass("");setCObs("");};
   const resetCbto =()=>{setXVal("");setXDate(toLocalDate());setXComp("");setXCal("");setXNts("");};
   const resetLoad=(calId=null)=>{setLId(null);setLCalId(calId);setLName("");setLBul("");setLPow("");setLChg("");setLPrim("");setLBrass("");setLCoal("");setLCbto("");setLVel("");setLNts("");};
@@ -829,27 +571,6 @@ function App(){
   const openQuickClean=(id,e)=>{
     e&&e.stopPropagation();setFTgt(id);resetClean();
     setEvType("clean");setFromDetail(false);setModal("event");
-  };
-  const openEditSession=(ev)=>{
-    setEditingEvId(ev.id);
-    setFTgt(ev.barrelId);
-    setFDate(ev.date);
-    setFShots(ev.shots||1);
-    setFSupp(ev.suppressed||false);
-    setFLoadSel(ev.loadId||"manual");
-    setFBul(ev.bullet||"");setFPow(ev.powder||"");setFChg(ev.charge||"");
-    setFPrim(ev.primer||"");setFBrass(ev.brass||"");setFCoal(ev.coal||"");
-    setFSCbto(ev.sessionCbto||"");
-    setFVel(ev.velocity?String(ev.velocity):"");
-    setFES(ev.es?String(ev.es):"");setFSD(ev.sd?String(ev.sd):"");
-    setFGrp(ev.groupSize?String(ev.groupSize):"");
-    setFGrpD(ev.groupDistance?String(ev.groupDistance):"");
-    setFGrpU(ev.groupUnit||"yd");
-    setFTemp(ev.temperature||"");setFAlt(ev.altitude||"");
-    setFDensityAlt(ev.densityAlt||"");
-    setFCond(ev.conditions||"");setFNts(ev.sessionNotes||"");
-    setWxErr("");
-    setEvType("session");setFromDetail(true);setModal("event");
   };
   const openDetailEv=()=>{
     setFTgt(activeId);resetSess();resetClean();resetCbto();
@@ -879,28 +600,8 @@ function App(){
   const addSession=()=>{
     if(!fTgt||fShots<1)return;
     const sl=loads.find(l=>l.id===fLoadSel);
-    const now=new Date();
-    const modStamp=`${now.toLocaleDateString()} at ${now.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}`;
-    const tgtBarrelForSave=barrels.find(b=>b.id===fTgt);
-    if(editingEvId){
-      setEvents(p=>p.map(e=>e.id===editingEvId?{
-        ...e,
-        loadId:sl?.id||null,loadName:sl?.name||null,
-        bullet:fBul.trim(),powder:fPow.trim(),charge:fChg.trim(),
-        primer:fPrim.trim(),brass:fBrass.trim(),coal:fCoal.trim(),
-        sessionCbto:fSCbto.trim(),
-        velocity:fVel?parseFloat(fVel):null,
-        es:fES?parseFloat(fES):null,sd:fSD?parseFloat(fSD):null,
-        groupSize:fGrp?parseFloat(fGrp):null,
-        groupDistance:fGrpD?parseFloat(fGrpD):null,groupUnit:fGrpU,
-        temperature:fTemp.trim(),altitude:fAlt.trim(),densityAlt:fDensityAlt.trim(),
-        conditions:fCond.trim(),sessionNotes:fNts.trim(),
-        modifiedAt:modStamp,
-      }:e));
-    } else {
-      setEvents(p=>[...p,{id:uid(),barrelId:fTgt,caliber:tgtBarrelForSave?.caliber||null,type:"session",date:fDate,shots:fShots,suppressed:fSupp,loadId:sl?.id||null,loadName:sl?.name||null,bullet:fBul.trim(),powder:fPow.trim(),charge:fChg.trim(),primer:fPrim.trim(),brass:fBrass.trim(),coal:fCoal.trim(),sessionCbto:fSCbto.trim(),velocity:fVel?parseFloat(fVel):null,es:fES?parseFloat(fES):null,sd:fSD?parseFloat(fSD):null,groupSize:fGrp?parseFloat(fGrp):null,groupDistance:fGrpD?parseFloat(fGrpD):null,groupUnit:fGrpU,temperature:fTemp.trim(),altitude:fAlt.trim(),densityAlt:fDensityAlt.trim(),conditions:fCond.trim(),sessionNotes:fNts.trim()}]);
-    }
-    setEditingEvId(null);setModal(null);
+    setEvents(p=>[...p,{id:uid(),barrelId:fTgt,type:"session",date:fDate,shots:fShots,suppressed:fSupp,loadId:sl?.id||null,loadName:sl?.name||null,bullet:fBul.trim(),powder:fPow.trim(),charge:fChg.trim(),primer:fPrim.trim(),brass:fBrass.trim(),coal:fCoal.trim(),sessionCbto:fSCbto.trim(),velocity:fVel?parseFloat(fVel):null,es:fES?parseFloat(fES):null,sd:fSD?parseFloat(fSD):null,groupSize:fGrp?parseFloat(fGrp):null,groupDistance:fGrpD?parseFloat(fGrpD):null,groupUnit:fGrpU,conditions:fCond.trim(),sessionNotes:fNts.trim()}]);
+    setModal(null);
   };
   const addClean=()=>{const bid=fromDetail?activeId:fTgt;if(!bid)return;setEvents(p=>[...p,{id:uid(),barrelId:bid,type:"clean",date:cDate,solvents:cSolv.trim(),method:cMeth.trim(),passes:cPass?parseInt(cPass):null,observations:cObs.trim()}]);setModal(null);};
   const addCbto =()=>{const v=parseFloat(xVal);if(!activeId||isNaN(v)||v<=0)return;setEvents(p=>[...p,{id:uid(),barrelId:activeId,type:"cbto",date:xDate,measurement:v,comparator:xComp.trim(),caliper:xCal.trim(),notes:xNts.trim()}]);setModal(null);};
@@ -968,18 +669,10 @@ function App(){
   // Session form — called as sessionForm(), not <SessionForm/>
   const sessionForm=()=>(
     <>
-      {editingEvId&&(
-        <div style={{background:T.amberBg,border:`1px solid ${T.amberBdr}`,borderRadius:8,padding:"10px 14px",marginBottom:14,fontSize:12,color:T.amber,lineHeight:1.6}}>
-          ⚠ <b>Editing existing session.</b> Date and round count are locked. A modification timestamp will be recorded automatically.
-        </div>
-      )}
-      {!editingEvId&&stepper()}
+      {stepper()}
       {lbl("Date Fired")}
-      {editingEvId
-        ?<div style={{...A.inp,color:T.mut,cursor:"default"}}>{fmtDate(fDate)}</div>
-        :<input type="date" max={toLocalDate()} value={fDate} onChange={e=>setFDate(e.target.value)} style={A.inpDate}/>
-      }
-      {!editingEvId&&fDate!==toLocalDate()&&<div style={{fontSize:11,color:T.acc,marginTop:-10,marginBottom:14}}>↑ Backdated — {fmtAgo(fDate)}</div>}
+      <input type="date" max={toLocalDate()} value={fDate} onChange={e=>setFDate(e.target.value)} style={A.inpDate}/>
+      {fDate!==toLocalDate()&&<div style={{fontSize:11,color:T.acc,marginTop:-10,marginBottom:14}}>↑ Backdated — {fmtAgo(fDate)}</div>}
       {toggle("Suppressed",fSupp,setFSupp)}
       {divider}
       {secH("Load Data")}
@@ -997,70 +690,14 @@ function App(){
       {row2(col(2,<>{lbl("Powder")}{inp(fPow,setFPow,"e.g. H4350")}</>),col(1,<>{lbl("Charge (gr)")}{inpM(fChg,setFChg,"41.5")}</>))}
       {row2(col(1,<>{lbl("Primer")}{inp(fPrim,setFPrim,"Fed 210M")}</>),col(1,<>{lbl("Brass")}{inp(fBrass,setFBrass,"Lapua")}</>))}
       {row2(col(1,<>{lbl("COAL (in)")}{inpM(fCoal,setFCoal,"2.9100")}</>),col(1,<>{lbl("CBTO (in)")}{inpM(fSCbto,setFSCbto,"2.8450")}</>))}
-      {fSCbto.trim()&&(
-        <div style={{background:T.amberBg,border:`1px solid ${T.amberBdr}`,borderRadius:6,padding:"8px 12px",marginTop:-8,marginBottom:10,display:"flex",gap:7,alignItems:"flex-start"}}>
-          <span style={{flexShrink:0}}>⚠️</span>
-          <div style={{fontSize:11,color:T.amber,lineHeight:1.55}}>CBTO seating depth is only comparable when using the <b>same comparator insert and caliper</b> every time. Record which tools were used in session notes.</div>
-        </div>
-      )}
       {divider}{secH("Chronograph")}
       {row3(col(1,<>{lbl("Avg Vel")}{inpM(fVel,setFVel,"2847")}</>),col(1,<>{lbl("ES")}{inpM(fES,setFES,"12")}</>),col(1,<>{lbl("SD")}{inpM(fSD,setFSD,"4")}</>))}
       {divider}{secH("Accuracy")}
       {row3(col(1,<>{lbl('Group (in)')}{inpM(fGrp,setFGrp,"0.375")}</>),col(1,<>{lbl("Distance")}{inpM(fGrpD,setFGrpD,"100")}</>),col(1,<>{lbl("Unit")}<select style={A.sel} value={fGrpU} onChange={e=>setFGrpU(e.target.value)}><option value="yd">yd</option><option value="m">m</option></select></>))}
-      {divider}{secH("Conditions")}
-      <button onClick={fetchWeather} disabled={wxLoading} style={{width:"100%",background:T.accBg,border:`1px solid ${T.accBdr}`,borderRadius:6,padding:"10px 14px",fontSize:12,color:T.acc,cursor:"pointer",fontWeight:500,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-        {wxLoading?"Fetching conditions…":"📡 Get Current Conditions"}
-      </button>
-      {wxErr&&<div style={{fontSize:11,color:T.amber,marginTop:-6,marginBottom:10,textAlign:"center"}}>{wxErr}</div>}
-      {row2(col(1,<>{lbl("Temperature (°F)")}{inpM(fTemp,setFTemp,"72")}</>),col(1,<>{lbl("Altitude (ft)")}{inpM(fAlt,setFAlt,"350")}</>))}
-      {/* Auto-compute density altitude when both temp and alt are entered manually */}
-      {fTemp&&fAlt&&!fDensityAlt&&(()=>{
-        const da=calcDensityAlt(parseFloat(fTemp),parseFloat(fAlt));
-        if(!isNaN(da))setTimeout(()=>setFDensityAlt(String(da)),0);
-        return null;
-      })()}
-      {fDensityAlt&&(
-        <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:6,padding:"8px 12px",marginTop:-10,marginBottom:14,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{fontSize:11,color:T.sub}}>Density Altitude</div>
-          <div style={{fontSize:13,fontFamily:T.mono,fontWeight:600,color:T.text}}>{parseInt(fDensityAlt).toLocaleString()} ft</div>
-        </div>
-      )}
-      {lbl("Wind / Other Conditions")}{inp(fCond,setFCond,"e.g. 10mph NE, mirage moderate")}
+      {divider}
+      {lbl("Conditions")}{inp(fCond,setFCond,"Temp, wind, altitude, mirage…")}
       {lbl("Session Notes")}{ta(fNts,setFNts,"POI shifts, load behavior, barrel temp…")}
-      {/* Save load to library — manual entry, no loads, or saved load was modified */}
-      {fBul.trim()&&(()=>{
-        const calObj=calibers.find(c=>c.name.trim().toLowerCase()===tgtBarrel?.caliber?.trim().toLowerCase());
-        if(!calObj)return null;
-        // Check if user modified a saved load
-        const selectedLoad=fLoadSel!=="manual"?loads.find(l=>l.id===fLoadSel):null;
-        const isModified=selectedLoad&&(
-          fBul.trim()!==selectedLoad.bullet||
-          fPow.trim()!==selectedLoad.powder||
-          fChg.trim()!==selectedLoad.charge||
-          fPrim.trim()!==selectedLoad.primer||
-          fBrass.trim()!==selectedLoad.brass||
-          fCoal.trim()!==selectedLoad.coal
-        );
-        const isManual=fLoadSel==="manual"||calLoads.length===0;
-        if(!isManual&&!isModified)return null;
-        // Don't show if identical load already exists
-        const alreadyExists=loads.some(l=>l.caliberId===calObj.id&&l.bullet.trim().toLowerCase()===fBul.trim().toLowerCase()&&l.powder.trim().toLowerCase()===fPow.trim().toLowerCase()&&l.charge.trim()===fChg.trim());
-        if(alreadyExists)return null;
-        return(
-          <div style={{background:T.accBg,border:`1px solid ${T.accBdr}`,borderRadius:6,padding:"10px 14px",marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center",gap:10}}>
-            <div style={{fontSize:12,color:T.acc,lineHeight:1.5}}>
-              {isModified?"Load modified — save as new load?":"Save this load to your library?"}
-            </div>
-            <button onClick={()=>{
-              const name=`${fBul.trim()}${fPow.trim()?` / ${fPow.trim()}`:""}`;
-              const newLoad={id:uid(),caliberId:calObj.id,caliber:calObj.name,name,bullet:fBul.trim(),powder:fPow.trim(),charge:fChg.trim(),primer:fPrim.trim(),brass:fBrass.trim(),coal:fCoal.trim(),cbto:fSCbto.trim(),velocity:fVel.trim(),notes:"",created:toLocalDate()};
-              setLoads(p=>[...p,newLoad]);
-              setFLoadSel(newLoad.id);
-            }} style={{background:T.acc,color:"#fff",border:"none",borderRadius:5,padding:"6px 12px",fontSize:11,fontWeight:600,cursor:"pointer",flexShrink:0,whiteSpace:"nowrap"}}>+ Save Load</button>
-          </div>
-        );
-      })()}
-      <button style={A.btnP} onClick={addSession}>{editingEvId?"Save Changes":"Log "}{!editingEvId&&<>{fShots} Round{fShots!==1?"s":""}{fDate!==toLocalDate()?` · ${fmtDate(fDate)}`:""}</>}</button>
+      <button style={A.btnP} onClick={addSession}>Log {fShots} Round{fShots!==1?"s":""}{fDate!==toLocalDate()?` · ${fmtDate(fDate)}`:""}</button>
     </>
   );
 
@@ -1079,47 +716,19 @@ function App(){
     </>
   );
 
-  const cbtoForm=()=>{
-    // Detect comparator/caliper mismatch with previous readings
-    const bCbtoReadings=events.filter(e=>e.barrelId===(fromDetail?activeId:fTgt)&&e.type==="cbto").sort((a,b)=>a.date.localeCompare(b.date));
-    const lastReading=bCbtoReadings[bCbtoReadings.length-1];
-    const mismatch=lastReading&&xComp.trim()&&lastReading.comparator&&xComp.trim().toLowerCase()!==lastReading.comparator.toLowerCase();
-    const caliperMismatch=lastReading&&xCal.trim()&&lastReading.caliper&&xCal.trim().toLowerCase()!==lastReading.caliper.toLowerCase();
-    return(
+  const cbtoForm=()=>(
     <>
-      {/* Educational warning */}
-      <div style={{background:T.amberBg,border:`1px solid ${T.amberBdr}`,borderRadius:8,padding:"12px 14px",marginBottom:16}}>
-        <div style={{display:"flex",gap:8,alignItems:"flex-start"}}>
-          <span style={{fontSize:16,lineHeight:1,flexShrink:0}}>⚠️</span>
-          <div style={{fontSize:12,color:T.amber,lineHeight:1.65}}>
-            <b>Comparator readings are relative, not absolute.</b> CBTO measurements are only meaningful when compared using the <b>exact same comparator insert and caliper</b> every time. Changing tools between readings will corrupt your erosion trend data.
-          </div>
-        </div>
-      </div>
+      <div style={{fontSize:12,color:T.sub,lineHeight:1.7,marginBottom:16}}>Record CBTO from cartridge base to bullet ogive at the lands.</div>
       {lbl("CBTO to Lands (inches)")}
       <input style={A.inpBig} value={xVal} onChange={e=>setXVal(e.target.value)} placeholder="2.8450" inputMode="decimal"/>
       {lbl("Date Measured")}
       <input type="date" max={toLocalDate()} value={xDate} onChange={e=>setXDate(e.target.value)} style={A.inpDate}/>
-      {lbl("Comparator Insert *")}
-      {inp(xComp,setXComp,lastReading?.comparator||"e.g. Hornady Lock-N-Load, .284 insert")}
-      {mismatch&&(
-        <div style={{fontSize:11,color:T.danger,marginTop:-10,marginBottom:10,lineHeight:1.5}}>
-          ⚠ This differs from your previous comparator ({lastReading.comparator}). This will break your trend data.
-        </div>
-      )}
-      {lbl("Caliper *")}
-      {inp(xCal,setXCal,lastReading?.caliper||"e.g. Mitutoyo 500-196-30")}
-      {caliperMismatch&&(
-        <div style={{fontSize:11,color:T.danger,marginTop:-10,marginBottom:10,lineHeight:1.5}}>
-          ⚠ This differs from your previous caliper ({lastReading.caliper}). This will break your trend data.
-        </div>
-      )}
-      {!xComp.trim()&&<div style={{fontSize:11,color:T.mut,marginTop:-10,marginBottom:10}}>* Required for data integrity</div>}
+      {lbl("Comparator Insert")}{inp(xComp,setXComp,"e.g. Hornady Lock-N-Load, .284 insert")}
+      {lbl("Caliper")}{inp(xCal,setXCal,"e.g. Mitutoyo 500-196-30")}
       {lbl("Notes")}{ta(xNts,setXNts,"Bullet used, round count since last measurement…")}
-      <button style={{...A.btnP,opacity:!xVal||!xComp.trim()||!xCal.trim()?0.5:1}} disabled={!xVal||!xComp.trim()||!xCal.trim()} onClick={addCbto}>Save Measurement</button>
-      {(!xComp.trim()||!xCal.trim())&&<div style={{fontSize:11,color:T.mut,marginTop:6,textAlign:"center"}}>Comparator and caliper are required to save.</div>}
+      <button style={A.btnP} onClick={addCbto}>Save Measurement</button>
     </>
-  );};
+  );
 
   const loadForm=()=>{
     const calObj=calibers.find(c=>c.id===lCalId);
@@ -1142,12 +751,6 @@ function App(){
         {row2(col(1,<>{lbl("Primer")}{inp(lPrim,setLPrim,"Fed 210M")}</>),col(1,<>{lbl("Brass")}{inp(lBrass,setLBrass,"Lapua")}</>))}
         {divider}{secH("Seating")}
         {row2(col(1,<>{lbl("COAL (in)")}{inpM(lCoal,setLCoal,"2.9100")}</>),col(1,<>{lbl("CBTO (in)")}{inpM(lCbto,setLCbto,"2.8450")}</>))}
-        {lCbto.trim()&&(
-          <div style={{background:T.amberBg,border:`1px solid ${T.amberBdr}`,borderRadius:6,padding:"8px 12px",marginTop:-8,marginBottom:10,display:"flex",gap:7,alignItems:"flex-start"}}>
-            <span style={{flexShrink:0}}>⚠️</span>
-            <div style={{fontSize:11,color:T.amber,lineHeight:1.55}}>CBTO seating depth is only meaningful when measured with the <b>same comparator insert and caliper</b> each time. Note your tools below.</div>
-          </div>
-        )}
         {divider}{secH("Performance")}
         {lbl("Avg Velocity (fps)")}{inpM(lVel,setLVel,"2847")}
         {lbl("Notes")}{ta(lNts,setLNts,"Best conditions, node range, context…")}
@@ -1173,18 +776,12 @@ function App(){
     <div style={A.overlay} onClick={()=>setModal(null)}>
       <div style={A.sheet} onClick={e=>e.stopPropagation()}>
         {/* Header */}
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
           <div style={{fontSize:15,fontWeight:700,color:T.text}}>Load Library</div>
           <button onClick={()=>{setNewCalName("");setModal("caliber_form");}} style={{background:T.acc,color:"#fff",border:"none",borderRadius:6,padding:"7px 12px",fontSize:12,fontWeight:600,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-            <Ic.Plus/> Add Caliber
+            <Ic.Plus/> Caliber
           </button>
         </div>
-        {loads.length>0&&(
-          <div style={{display:"flex",gap:6,marginBottom:16}}>
-            <button onClick={()=>exportLoadCSV(loads,calibers,null)} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,padding:"7px 4px"}}>↓ All Loads CSV</button>
-            <button onClick={()=>exportLoadPDF(loads,calibers,null,BORELY_LOGO_URI)} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,padding:"7px 4px"}}>↓ All Loads PDF</button>
-          </div>
-        )}
 
         {calibers.length===0?(
           <div style={{padding:"40px 0",textAlign:"center"}}>
@@ -1200,11 +797,7 @@ function App(){
                 {/* Caliber header row */}
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
                   <div style={{fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.10em",color:T.acc}}>{cal.name}</div>
-                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                    {calLoads.length>0&&<>
-                      <button onClick={()=>exportLoadCSV(loads,calibers,cal.id)} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:5,color:T.mut,cursor:"pointer",fontSize:10,padding:"3px 7px"}}>CSV</button>
-                      <button onClick={()=>exportLoadPDF(loads,calibers,cal.id,BORELY_LOGO_URI)} style={{background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:5,color:T.mut,cursor:"pointer",fontSize:10,padding:"3px 7px"}}>PDF</button>
-                    </>}
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
                     <button onClick={()=>{resetLoad(cal.id);setModal("load_form");}} style={{background:"transparent",border:`1px solid ${T.accBdr}`,borderRadius:5,color:T.acc,cursor:"pointer",fontSize:11,fontWeight:500,padding:"4px 10px",display:"flex",alignItems:"center",gap:3}}>
                       <Ic.Plus/> Add Load
                     </button>
@@ -1326,7 +919,7 @@ function App(){
             </div>
           </div>
           <div style={{display:"flex",background:T.surf,borderBottom:`1px solid ${T.bdr}`}}>
-            {[["timeline","Timeline"],["lands","Lands"],["report","Report"],["analytics","Analytics"]].map(([k,l])=>(
+            {[["timeline","Timeline"],["lands","Lands"],["report","Report"]].map(([k,l])=>(
               <button key={k} onClick={()=>setTab(k)} style={{flex:1,padding:"11px 0",background:"transparent",border:"none",borderBottom:`2px solid ${tab===k?T.acc:"transparent"}`,color:tab===k?T.acc:T.sub,fontSize:11,fontWeight:tab===k?600:400,cursor:"pointer",textTransform:"uppercase",letterSpacing:"0.08em"}}>{l}</button>
             ))}
           </div>
@@ -1342,7 +935,7 @@ function App(){
             </div>
             {allEvts.length===0
               ?<div style={{padding:"52px 24px",textAlign:"center",fontSize:11,textTransform:"uppercase",letterSpacing:"0.1em",color:T.mut}}>No events yet</div>
-              :<div style={{padding:"0 16px"}}>{allEvts.map(ev=><EventCard key={ev.id} ev={ev} baseline={baseCbto} onDel={()=>delEvent(ev.id)} onEdit={!isT?openEditSession:null} readOnly={isT} T={T} calibers={calibers} loads={loads} setLoads={setLoads}/>)}</div>
+              :<div style={{padding:"0 16px"}}>{allEvts.map(ev=><EventCard key={ev.id} ev={ev} baseline={baseCbto} onDel={()=>delEvent(ev.id)} readOnly={isT} T={T}/>)}</div>
             }
           </>}
           {tab==="lands"&&<>
@@ -1368,110 +961,11 @@ function App(){
                 <span style={{fontSize:11,fontWeight:500,textTransform:"uppercase",letterSpacing:"0.08em",color:T.sub}}>Reading History</span>
                 <span style={{fontSize:11,color:T.mut}}>{bCbtos.length} readings</span>
               </div>
-              <div style={{padding:"0 16px"}}>{[...bCbtos].reverse().map(r=><EventCard key={r.id} ev={r} baseline={baseCbto} onDel={()=>delEvent(r.id)} readOnly={isT} T={T} calibers={calibers} loads={loads} setLoads={setLoads}/>)}</div>
+              <div style={{padding:"0 16px"}}>{[...bCbtos].reverse().map(r=><EventCard key={r.id} ev={r} baseline={baseCbto} onDel={()=>delEvent(r.id)} readOnly={isT} T={T}/>)}</div>
               {!isT&&<div style={{padding:"8px 16px 0"}}><button onClick={()=>{resetCbto();setEvType("cbto");setFromDetail(true);setModal("event");}} style={{...A.btnG,marginTop:0,display:"flex",alignItems:"center",justifyContent:"center",gap:6,fontSize:12}}><Ic.Plus/> Add New Reading</button></div>}
             </>}
           </>}
           {tab==="report"&&<ReportView barrel={barrel} events={events} vw={vw} T={T}/>}
-          {tab==="analytics"&&(()=>{
-            const aSess=bSess.filter(s=>s.velocity).sort((a,b)=>a.date.localeCompare(b.date));
-            // Build cumulative round count for X axis
-            let cumRnds=0;
-            const sessWithRnds=bSess.sort((a,b)=>a.date.localeCompare(b.date)).map(s=>{cumRnds+=(parseInt(s.shots)||0);return{...s,cumRnds};});
-            const velPts=sessWithRnds.filter(s=>s.velocity);
-            const esPts=sessWithRnds.filter(s=>s.es);
-            const sdPts=sessWithRnds.filter(s=>s.sd);
-            const cbtoSorted=[...bCbtos].sort((a,b)=>a.date.localeCompare(b.date));
-
-            // SVG chart helper
-            const AnalyticsChart=({pts,xKey,yKey,color,label,yFmt,minPts=3,emptyMsg})=>{
-              if(!pts||pts.length<minPts)return(
-                <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:10,padding:"24px 20px",marginBottom:14,textAlign:"center"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:T.sub,marginBottom:6}}>{label}</div>
-                  <div style={{fontSize:11,color:T.mut,lineHeight:1.6}}>{emptyMsg||`Log ${minPts} more sessions with ${label.toLowerCase()} to unlock this chart.`}</div>
-                </div>
-              );
-              const W=Math.min(vw-48,560),H=120,pl=44,pr=12,pt=10,pb=28;
-              const xs=pts.map(p=>p[xKey]),ys=pts.map(p=>p[yKey]);
-              const x0=Math.min(...xs),x1=Math.max(...xs)||1;
-              const y0=Math.min(...ys),y1=Math.max(...ys)||1;
-              const sx=v=>pl+(v-x0)/(x1-x0||1)*(W-pl-pr);
-              const sy=v=>pt+(1-(v-y0)/(y1-y0||1))*(H-pt-pb);
-              const pts2=pts.map(p=>({cx:sx(p[xKey]),cy:sy(p[yKey])}));
-              const path=pts2.map((p,i)=>`${i===0?"M":"L"}${p.cx.toFixed(1)},${p.cy.toFixed(1)}`).join(" ");
-              // Trend line
-              const n=pts.length,sx2=xs.reduce((a,b)=>a+b,0),sy2=ys.reduce((a,b)=>a+b,0);
-              const sxy=pts.reduce((a,p)=>a+p[xKey]*p[yKey],0);
-              const sx22=xs.reduce((a,b)=>a+b*b,0);
-              const slope=(n*sxy-sx2*sy2)/(n*sx22-sx2*sx2||1);
-              const intercept=(sy2-slope*sx2)/n;
-              const ty0=intercept+slope*x0,ty1=intercept+slope*x1;
-              return(
-                <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:10,padding:"14px 16px",marginBottom:14}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
-                    <div style={{fontSize:12,fontWeight:600,color:T.sub}}>{label}</div>
-                    <div style={{fontSize:11,fontFamily:T.mono,color:T.mut}}>{yFmt?yFmt(ys[ys.length-1]):ys[ys.length-1]} latest</div>
-                  </div>
-                  <svg width={W} height={H} style={{overflow:"visible",display:"block"}}>
-                    {/* Grid lines */}
-                    {[0,0.5,1].map(f=>(
-                      <g key={f}>
-                        <line x1={pl} y1={pt+f*(H-pt-pb)} x2={W-pr} y2={pt+f*(H-pt-pb)} stroke={T.bdr} strokeWidth="0.5"/>
-                        <text x={pl-4} y={pt+f*(H-pt-pb)+3} fontSize="9" fill={T.mut} textAnchor="end">{yFmt?yFmt(y1-f*(y1-y0)):Math.round(y1-f*(y1-y0))}</text>
-                      </g>
-                    ))}
-                    {/* X axis labels */}
-                    <text x={pl} y={H} fontSize="9" fill={T.mut}>{x0.toLocaleString()}</text>
-                    <text x={W-pr} y={H} fontSize="9" fill={T.mut} textAnchor="end">{x1.toLocaleString()}</text>
-                    {/* Trend line */}
-                    <line x1={sx(x0)} y1={sy(ty0)} x2={sx(x1)} y2={sy(ty1)} stroke={color} strokeWidth="1" strokeDasharray="4,3" opacity="0.5"/>
-                    {/* Data line */}
-                    <path d={path} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                    {/* Data points */}
-                    {pts2.map((p,i)=><circle key={i} cx={p.cx} cy={p.cy} r="3" fill={color} stroke={T.bg} strokeWidth="1.5"/>)}
-                    {/* X axis */}
-                    <line x1={pl} y1={H-pb} x2={W-pr} y2={H-pb} stroke={T.bdr} strokeWidth="0.5"/>
-                  </svg>
-                  <div style={{fontSize:9,color:T.mut,marginTop:4,textTransform:"uppercase",letterSpacing:"0.08em"}}>Cumulative rounds →</div>
-                </div>
-              );
-            };
-
-            // CBTO chart using readings
-            const CbtoChart=()=>{
-              if(cbtoSorted.length<2)return(
-                <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:10,padding:"24px 20px",marginBottom:14,textAlign:"center"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:T.sub,marginBottom:6}}>Throat Erosion (CBTO)</div>
-                  <div style={{fontSize:11,color:T.mut,lineHeight:1.6}}>Log 2 or more CBTO readings to track throat erosion over time.</div>
-                </div>
-              );
-              // Map CBTO readings to nearest cumulative round count
-              const cbtoPts=cbtoSorted.map(r=>{
-                const nearestSess=sessWithRnds.filter(s=>s.date<=r.date);
-                const cum=nearestSess.length>0?nearestSess[nearestSess.length-1].cumRnds:0;
-                return{cumRnds:cum,measurement:parseFloat(r.measurement)};
-              });
-              const base=cbtoPts[0].measurement;
-              const erosionPts=cbtoPts.map(p=>({...p,erosion:parseFloat((p.measurement-base).toFixed(4))}));
-              return <AnalyticsChart pts={erosionPts} xKey="cumRnds" yKey="erosion" color={T.amber} label="Throat Erosion (CBTO drift in inches)" yFmt={v=>v>=0?"+"+v.toFixed(3)+'"':v.toFixed(3)+'"'} minPts={2} emptyMsg="Log 2 or more CBTO readings to track throat erosion."/>;
-            };
-
-            return(
-              <div style={{padding:"16px 16px 0"}}>
-                {velPts.length===0&&esPts.length===0&&cbtoSorted.length<2&&(
-                  <div style={{textAlign:"center",padding:"32px 0 16px"}}>
-                    <div style={{fontSize:13,color:T.sub,lineHeight:1.7,maxWidth:280,margin:"0 auto"}}>
-                      Log sessions with velocity, ES, and SD data, and add CBTO readings to unlock analytics charts.
-                    </div>
-                  </div>
-                )}
-                <AnalyticsChart pts={velPts} xKey="cumRnds" yKey="velocity" color={T.acc} label="Muzzle Velocity (fps)" yFmt={v=>Math.round(v)+" fps"}/>
-                <AnalyticsChart pts={esPts} xKey="cumRnds" yKey="es" color="#2EC4B6" label="Extreme Spread (ES)" yFmt={v=>Math.round(v)+" fps"}/>
-                <AnalyticsChart pts={sdPts} xKey="cumRnds" yKey="sd" color={T.amber} label="Standard Deviation (SD)" yFmt={v=>Math.round(v)+" fps"}/>
-                <CbtoChart/>
-              </div>
-            );
-          })()}
           <div style={{height:24}}/>
           <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:10,padding:"0 16px"}}>
             {!isT&&<button onClick={()=>setConfTransfer(true)} style={{background:"transparent",border:"none",color:T.amber,cursor:"pointer",fontSize:11,display:"inline-flex",alignItems:"center",gap:5,fontFamily:T.sans}}><Ic.Share/> Transfer barrel to new owner</button>}
@@ -1537,7 +1031,6 @@ function App(){
           <button onClick={()=>{if(calibers.length===0){setFabMenu(true);}else if(!canAddBarrel){setShowPaywall("barrel");}else{setModal("barrel");}}} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Plus/> Barrel</button>
           <button onClick={()=>setModal("loads")} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}>Loads</button>
           <button onClick={()=>importRef.current&&importRef.current.click()} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Up/> Import</button>
-          <button onClick={()=>{setExpBarrels(barrels.map(b=>b.id));setExpCalibers(calibers.map(c=>c.id));setShowExport(true);}} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,cursor:"pointer",fontSize:11,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"7px 4px",whiteSpace:"nowrap"}}><Ic.Dl/> Export</button>
         </div>
       </div>
       <div style={{paddingBottom:100}}>
@@ -1862,95 +1355,6 @@ function App(){
           </div>
         </div>
       )}
-      {/* ── Export selection modal ── */}
-      {showExport&&(
-        <div style={{position:"fixed",inset:0,background:"rgba(10,9,8,.82)",display:"flex",alignItems:"flex-end",zIndex:300}}>
-          <div style={{background:T.surf,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:maxW,margin:"0 auto",maxHeight:"85vh",display:"flex",flexDirection:"column"}}>
-
-            {/* Header */}
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"20px 20px 12px",borderBottom:`1px solid ${T.bdr}`,flexShrink:0}}>
-              <div style={{fontSize:15,fontWeight:700,color:T.text}}>Export</div>
-              <button onClick={()=>setShowExport(false)} style={{background:"none",border:"none",color:T.sub,cursor:"pointer",fontSize:22,lineHeight:1}}>×</button>
-            </div>
-
-            {/* Scrollable content */}
-            <div style={{overflowY:"auto",padding:"16px 20px 24px",flex:1}}>
-
-              {/* ── Barrels section ── */}
-              {barrels.length>0&&(
-                <>
-                  <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",color:T.acc,marginBottom:10}}>Barrels</div>
-                  <div style={{display:"flex",gap:6,marginBottom:10}}>
-                    <button onClick={()=>setExpBarrels(barrels.map(b=>b.id))} style={{fontSize:11,padding:"5px 10px",background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:5,color:T.sub,cursor:"pointer"}}>Select All</button>
-                    <button onClick={()=>setExpBarrels([])} style={{fontSize:11,padding:"5px 10px",background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:5,color:T.sub,cursor:"pointer"}}>Clear</button>
-                  </div>
-                  {barrels.map(b=>(
-                    <div key={b.id} onClick={()=>setExpBarrels(p=>p.includes(b.id)?p.filter(x=>x!==b.id):[...p,b.id])}
-                      style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:expBarrels.includes(b.id)?T.accBg:T.bg,border:`1px solid ${expBarrels.includes(b.id)?T.accBdr:T.bdr}`,borderRadius:8,marginBottom:6,cursor:"pointer"}}>
-                      <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${expBarrels.includes(b.id)?T.acc:T.bdr}`,background:expBarrels.includes(b.id)?T.acc:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        {expBarrels.includes(b.id)&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
-                      </div>
-                      <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:13,fontWeight:600,color:T.text}}>{b.name}</div>
-                        <div style={{fontSize:11,color:T.sub}}>{b.caliber||"No caliber"}</div>
-                      </div>
-                      {b.status==="transferred"&&<div style={{fontSize:10,color:T.amber,background:T.amberBg,border:`1px solid ${T.amberBdr}`,borderRadius:4,padding:"2px 6px"}}>Archived</div>}
-                    </div>
-                  ))}
-                  {expBarrels.length>0&&(
-                    <div style={{display:"flex",gap:6,marginTop:4,marginBottom:16}}>
-                      <button onClick={()=>{const sel=barrels.filter(b=>expBarrels.includes(b.id));exportMultiBarrelPDF(sel,events,BORELY_LOGO_URI);}} style={{flex:1,background:T.acc,color:"#fff",border:"none",borderRadius:6,padding:"10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>↓ PDF ({expBarrels.length})</button>
-                      <button onClick={()=>{const sel=barrels.filter(b=>expBarrels.includes(b.id));exportMultiBarrelCSV(sel,events);}} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,padding:"10px",fontSize:12,cursor:"pointer"}}>↓ CSV ({expBarrels.length})</button>
-                    </div>
-                  )}
-                </>
-              )}
-
-              {/* ── Loads section ── */}
-              {calibers.length>0&&(
-                <>
-                  <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.12em",color:T.acc,marginBottom:10,marginTop:barrels.length>0?8:0}}>Load Library</div>
-                  <div style={{display:"flex",gap:6,marginBottom:10}}>
-                    <button onClick={()=>setExpCalibers(calibers.map(c=>c.id))} style={{fontSize:11,padding:"5px 10px",background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:5,color:T.sub,cursor:"pointer"}}>Select All</button>
-                    <button onClick={()=>setExpCalibers([])} style={{fontSize:11,padding:"5px 10px",background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:5,color:T.sub,cursor:"pointer"}}>Clear</button>
-                  </div>
-                  {calibers.map(cal=>{
-                    const calLoads=loads.filter(l=>l.caliberId===cal.id);
-                    return(
-                      <div key={cal.id} onClick={()=>setExpCalibers(p=>p.includes(cal.id)?p.filter(x=>x!==cal.id):[...p,cal.id])}
-                        style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:expCalibers.includes(cal.id)?T.accBg:T.bg,border:`1px solid ${expCalibers.includes(cal.id)?T.accBdr:T.bdr}`,borderRadius:8,marginBottom:6,cursor:"pointer"}}>
-                        <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${expCalibers.includes(cal.id)?T.acc:T.bdr}`,background:expCalibers.includes(cal.id)?T.acc:"transparent",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-                          {expCalibers.includes(cal.id)&&<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>}
-                        </div>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:13,fontWeight:600,color:T.text}}>{cal.name}</div>
-                          <div style={{fontSize:11,color:T.sub}}>{calLoads.length} load{calLoads.length!==1?"s":""}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {expCalibers.length>0&&(
-                    <div style={{display:"flex",gap:6,marginTop:4}}>
-                      <button onClick={()=>{
-                        const filteredLoads=loads.filter(l=>expCalibers.includes(l.caliberId));
-                        const filteredCals=calibers.filter(c=>expCalibers.includes(c.id));
-                        exportLoadPDF(filteredLoads,filteredCals,null,BORELY_LOGO_URI);
-                      }} style={{flex:1,background:T.acc,color:"#fff",border:"none",borderRadius:6,padding:"10px",fontSize:12,fontWeight:600,cursor:"pointer"}}>↓ PDF ({expCalibers.length})</button>
-                      <button onClick={()=>{
-                        const filteredLoads=loads.filter(l=>expCalibers.includes(l.caliberId));
-                        const filteredCals=calibers.filter(c=>expCalibers.includes(c.id));
-                        exportLoadCSV(filteredLoads,filteredCals,null);
-                      }} style={{flex:1,background:"transparent",border:`1px solid ${T.bdr}`,borderRadius:6,color:T.sub,padding:"10px",fontSize:12,cursor:"pointer"}}>↓ CSV ({expCalibers.length})</button>
-                    </div>
-                  )}
-                </>
-              )}
-
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── Confirm delete caliber ── */}
       {confDelCal&&(()=>{
         const cal=calibers.find(c=>c.id===confDelCal);
