@@ -208,6 +208,13 @@ function EventCard({ev,baseline,onDel,onEdit,readOnly,T,calibers,loads,setLoads}
           {ev.brass&&<div style={{fontSize:12,color:T.sub}}><b style={{color:T.text,fontWeight:500}}>Brass: </b>{ev.brass}</div>}
           {(ev.coal||ev.sessionCbto)&&<div style={{fontSize:12,color:T.sub,fontFamily:T.mono}}><b style={{color:T.text,fontWeight:500,fontFamily:T.sans}}>Seating: </b>{ev.coal?`COAL ${ev.coal}" `:""}{ev.sessionCbto?`CBTO ${ev.sessionCbto}"`:""}</div>}
           {ev.sessionNotes&&<div style={{fontSize:12,color:T.sub,lineHeight:1.65}}><b style={{color:T.text,fontWeight:500}}>Notes: </b>{ev.sessionNotes}</div>}
+          {ev.photo&&(
+            <div style={{marginTop:10,marginBottom:4}}>
+              <img src={ev.photo} style={{width:"100%",maxHeight:260,objectFit:"cover",borderRadius:8,display:"block",cursor:"pointer"}} alt="Group photo"
+                onClick={e=>{e.stopPropagation();window.open(ev.photo,"_blank");}}/>
+              <div style={{fontSize:10,color:T.mut,marginTop:4,textAlign:"center",letterSpacing:"0.06em",textTransform:"uppercase"}}>Tap to view full size</div>
+            </div>
+          )}
           {ev.modifiedAt&&<div style={{fontSize:11,color:T.mut,marginTop:4,fontStyle:"italic"}}>Modified {ev.modifiedAt}</div>}
           {ev.bullet&&calibers&&loads&&setLoads&&(()=>{
             const calObj=calibers.find(c=>c.name&&c.name.trim().toLowerCase()===(ev.caliber||"").trim().toLowerCase());
@@ -674,6 +681,7 @@ function App(){
   const[fCond, setFCond] =useState("");const[fNts,setFNts]=useState("");
   const[fTemp, setFTemp] =useState("");const[fAlt,setFAlt]=useState("");
   const[fDensityAlt,setFDensityAlt]=useState("");
+  const[fPhoto,setFPhoto]=useState(null); // base64 string or null
   const[wxLoading,setWxLoading]=useState(false);const[wxErr,setWxErr]=useState("");
   const[fTgt,  setFTgt]  =useState(null);const[evType,setEvType]=useState("session");
   // clean
@@ -804,7 +812,7 @@ function App(){
     const dirs=["N","NE","E","SE","S","SW","W","NW"];
     return dirs[Math.round(deg/45)%8];
   };
-  const resetSess=()=>{setEditingEvId(null);setFShots(1);setFDate(toLocalDate());setFSupp(false);setFLoadSel("manual");clearLF();setFES("");setFSD("");setFGrp("");setFGrpD("");setFGrpU("yd");setFTemp("");setFAlt("");setFDensityAlt("");setFCond("");setFNts("");setWxErr("");};
+  const resetSess=()=>{setEditingEvId(null);setFShots(1);setFDate(toLocalDate());setFSupp(false);setFLoadSel("manual");clearLF();setFES("");setFSD("");setFGrp("");setFGrpD("");setFGrpU("yd");setFTemp("");setFAlt("");setFDensityAlt("");setFCond("");setFNts("");setFPhoto(null);setWxErr("");};
   const resetClean=()=>{setCDate(toLocalDate());setCQuick(true);setCSolv("");setCMeth("");setCPass("");setCObs("");};
   const resetCbto =()=>{setXVal("");setXDate(toLocalDate());setXComp("");setXCal("");setXNts("");};
   const resetLoad=(calId=null)=>{setLId(null);setLCalId(calId);setLName("");setLBul("");setLPow("");setLChg("");setLPrim("");setLBrass("");setLCoal("");setLCbto("");setLVel("");setLNts("");};
@@ -846,7 +854,7 @@ function App(){
     setFGrpD(ev.groupDistance?String(ev.groupDistance):"");
     setFGrpU(ev.groupUnit||"yd");
     setFTemp(ev.temperature||"");setFAlt(ev.altitude||"");
-    setFDensityAlt(ev.densityAlt||"");
+    setFDensityAlt(ev.densityAlt||"");setFPhoto(ev.photo||null);
     setFCond(ev.conditions||"");setFNts(ev.sessionNotes||"");
     setWxErr("");
     setEvType("session");setFromDetail(true);setModal("event");
@@ -894,11 +902,11 @@ function App(){
         groupSize:fGrp?parseFloat(fGrp):null,
         groupDistance:fGrpD?parseFloat(fGrpD):null,groupUnit:fGrpU,
         temperature:fTemp.trim(),altitude:fAlt.trim(),densityAlt:fDensityAlt.trim(),
-        conditions:fCond.trim(),sessionNotes:fNts.trim(),
+        conditions:fCond.trim(),sessionNotes:fNts.trim(),photo:fPhoto||e.photo||null,
         modifiedAt:modStamp,
       }:e));
     } else {
-      setEvents(p=>[...p,{id:uid(),barrelId:fTgt,caliber:tgtBarrelForSave?.caliber||null,type:"session",date:fDate,shots:fShots,suppressed:fSupp,loadId:sl?.id||null,loadName:sl?.name||null,bullet:fBul.trim(),powder:fPow.trim(),charge:fChg.trim(),primer:fPrim.trim(),brass:fBrass.trim(),coal:fCoal.trim(),sessionCbto:fSCbto.trim(),velocity:fVel?parseFloat(fVel):null,es:fES?parseFloat(fES):null,sd:fSD?parseFloat(fSD):null,groupSize:fGrp?parseFloat(fGrp):null,groupDistance:fGrpD?parseFloat(fGrpD):null,groupUnit:fGrpU,temperature:fTemp.trim(),altitude:fAlt.trim(),densityAlt:fDensityAlt.trim(),conditions:fCond.trim(),sessionNotes:fNts.trim()}]);
+      setEvents(p=>[...p,{id:uid(),barrelId:fTgt,caliber:tgtBarrelForSave?.caliber||null,type:"session",date:fDate,shots:fShots,suppressed:fSupp,loadId:sl?.id||null,loadName:sl?.name||null,bullet:fBul.trim(),powder:fPow.trim(),charge:fChg.trim(),primer:fPrim.trim(),brass:fBrass.trim(),coal:fCoal.trim(),sessionCbto:fSCbto.trim(),velocity:fVel?parseFloat(fVel):null,es:fES?parseFloat(fES):null,sd:fSD?parseFloat(fSD):null,groupSize:fGrp?parseFloat(fGrp):null,groupDistance:fGrpD?parseFloat(fGrpD):null,groupUnit:fGrpU,temperature:fTemp.trim(),altitude:fAlt.trim(),densityAlt:fDensityAlt.trim(),conditions:fCond.trim(),sessionNotes:fNts.trim(),photo:fPhoto||null}]);
     }
     setEditingEvId(null);setModal(null);
   };
@@ -1027,6 +1035,41 @@ function App(){
       )}
       {lbl("Wind / Other Conditions")}{inp(fCond,setFCond,"e.g. 10mph NE, mirage moderate")}
       {lbl("Session Notes")}{ta(fNts,setFNts,"POI shifts, load behavior, barrel temp…")}
+      {/* ── Group photo ── */}
+      <div style={{marginBottom:14}}>
+        {lbl("Group Photo (optional)")}
+        {fPhoto?(
+          <div style={{position:"relative"}}>
+            <img src={fPhoto} style={{width:"100%",maxHeight:220,objectFit:"cover",borderRadius:8,display:"block"}} alt="Group photo"/>
+            <button onClick={()=>setFPhoto(null)} style={{position:"absolute",top:6,right:6,background:"rgba(10,9,8,.7)",border:"none",borderRadius:50,width:28,height:28,color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,lineHeight:1}}>×</button>
+          </div>
+        ):(
+          <label style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,background:T.bg,border:`1px dashed ${T.bdr}`,borderRadius:8,padding:"16px",cursor:"pointer",fontSize:12,color:T.sub}}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            Attach group photo from camera roll
+            <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>{
+              const file=e.target.files?.[0];
+              if(!file)return;
+              const reader=new FileReader();
+              reader.onload=ev=>{
+                const img=new Image();
+                img.onload=()=>{
+                  const canvas=document.createElement("canvas");
+                  const maxW=1200,maxH=1200;
+                  let w=img.width,h=img.height;
+                  if(w>maxW){h=Math.round(h*maxW/w);w=maxW;}
+                  if(h>maxH){w=Math.round(w*maxH/h);h=maxH;}
+                  canvas.width=w;canvas.height=h;
+                  canvas.getContext("2d").drawImage(img,0,0,w,h);
+                  setFPhoto(canvas.toDataURL("image/jpeg",0.72));
+                };
+                img.src=ev.target?.result;
+              };
+              reader.readAsDataURL(file);
+            }}/>
+          </label>
+        )}
+      </div>
       {/* Save load to library — manual entry, no loads, or saved load was modified */}
       {fBul.trim()&&(()=>{
         const calObj=calibers.find(c=>c.name.trim().toLowerCase()===tgtBarrel?.caliber?.trim().toLowerCase());
@@ -1374,101 +1417,65 @@ function App(){
           </>}
           {tab==="report"&&<ReportView barrel={barrel} events={events} vw={vw} T={T}/>}
           {tab==="analytics"&&(()=>{
-            const aSess=bSess.filter(s=>s.velocity).sort((a,b)=>a.date.localeCompare(b.date));
-            // Build cumulative round count for X axis
+            const cbtoSorted=[...bCbtos].sort((a,b)=>a.date.localeCompare(b.date));
             let cumRnds=0;
             const sessWithRnds=bSess.sort((a,b)=>a.date.localeCompare(b.date)).map(s=>{cumRnds+=(parseInt(s.shots)||0);return{...s,cumRnds};});
-            const velPts=sessWithRnds.filter(s=>s.velocity);
-            const esPts=sessWithRnds.filter(s=>s.es);
-            const sdPts=sessWithRnds.filter(s=>s.sd);
-            const cbtoSorted=[...bCbtos].sort((a,b)=>a.date.localeCompare(b.date));
-
-            // SVG chart helper
-            const AnalyticsChart=({pts,xKey,yKey,color,label,yFmt,minPts=3,emptyMsg})=>{
-              if(!pts||pts.length<minPts)return(
-                <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:10,padding:"24px 20px",marginBottom:14,textAlign:"center"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:T.sub,marginBottom:6}}>{label}</div>
-                  <div style={{fontSize:11,color:T.mut,lineHeight:1.6}}>{emptyMsg||`Log ${minPts} more sessions with ${label.toLowerCase()} to unlock this chart.`}</div>
+            const W=Math.min(vw-48,560),H=140,pl=50,pr=12,pt=10,pb=28;
+            const renderCbtoChart=()=>{
+              if(cbtoSorted.length<2)return(
+                <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:10,padding:"28px 20px",textAlign:"center"}}>
+                  <div style={{fontSize:13,fontWeight:600,color:T.sub,marginBottom:8}}>Throat Erosion Chart</div>
+                  <div style={{fontSize:12,color:T.mut,lineHeight:1.7,maxWidth:240,margin:"0 auto"}}>Log 2 or more CBTO readings from the Lands tab to track throat erosion over barrel life.</div>
                 </div>
               );
-              const W=Math.min(vw-48,560),H=120,pl=44,pr=12,pt=10,pb=28;
-              const xs=pts.map(p=>p[xKey]),ys=pts.map(p=>p[yKey]);
+              const cbtoPts=cbtoSorted.map(r=>{
+                const near=sessWithRnds.filter(s=>s.date<=r.date);
+                const cum=near.length>0?near[near.length-1].cumRnds:0;
+                return{cumRnds:cum,erosion:parseFloat((parseFloat(r.measurement)-parseFloat(cbtoSorted[0].measurement)).toFixed(4))};
+              });
+              const xs=cbtoPts.map(p=>p.cumRnds),ys=cbtoPts.map(p=>p.erosion);
               const x0=Math.min(...xs),x1=Math.max(...xs)||1;
-              const y0=Math.min(...ys),y1=Math.max(...ys)||1;
+              const y0=Math.min(0,...ys),y1=Math.max(...ys)||0.01;
               const sx=v=>pl+(v-x0)/(x1-x0||1)*(W-pl-pr);
               const sy=v=>pt+(1-(v-y0)/(y1-y0||1))*(H-pt-pb);
-              const pts2=pts.map(p=>({cx:sx(p[xKey]),cy:sy(p[yKey])}));
+              const pts2=cbtoPts.map(p=>({cx:sx(p.cumRnds),cy:sy(p.erosion)}));
               const path=pts2.map((p,i)=>`${i===0?"M":"L"}${p.cx.toFixed(1)},${p.cy.toFixed(1)}`).join(" ");
-              // Trend line
-              const n=pts.length,sx2=xs.reduce((a,b)=>a+b,0),sy2=ys.reduce((a,b)=>a+b,0);
-              const sxy=pts.reduce((a,p)=>a+p[xKey]*p[yKey],0);
-              const sx22=xs.reduce((a,b)=>a+b*b,0);
-              const slope=(n*sxy-sx2*sy2)/(n*sx22-sx2*sx2||1);
-              const intercept=(sy2-slope*sx2)/n;
-              const ty0=intercept+slope*x0,ty1=intercept+slope*x1;
+              const latest=cbtoPts[cbtoPts.length-1];
               return(
-                <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:10,padding:"14px 16px",marginBottom:14}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:8}}>
-                    <div style={{fontSize:12,fontWeight:600,color:T.sub}}>{label}</div>
-                    <div style={{fontSize:11,fontFamily:T.mono,color:T.mut}}>{yFmt?yFmt(ys[ys.length-1]):ys[ys.length-1]} latest</div>
+                <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:10,padding:"16px 16px 12px",marginBottom:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:10}}>
+                    <div style={{fontSize:12,fontWeight:600,color:T.sub}}>Throat Erosion (CBTO drift)</div>
+                    <div style={{fontSize:12,fontFamily:T.mono,color:T.amber}}>{latest.erosion>=0?"+":""}{latest.erosion.toFixed(3)}"</div>
                   </div>
                   <svg width={W} height={H} style={{overflow:"visible",display:"block"}}>
-                    {/* Grid lines */}
                     {[0,0.5,1].map(f=>(
                       <g key={f}>
                         <line x1={pl} y1={pt+f*(H-pt-pb)} x2={W-pr} y2={pt+f*(H-pt-pb)} stroke={T.bdr} strokeWidth="0.5"/>
-                        <text x={pl-4} y={pt+f*(H-pt-pb)+3} fontSize="9" fill={T.mut} textAnchor="end">{yFmt?yFmt(y1-f*(y1-y0)):Math.round(y1-f*(y1-y0))}</text>
+                        <text x={pl-4} y={pt+f*(H-pt-pb)+3} fontSize="9" fill={T.mut} textAnchor="end">{`+${(y1-f*(y1-y0)).toFixed(3)}"`}</text>
                       </g>
                     ))}
-                    {/* X axis labels */}
                     <text x={pl} y={H} fontSize="9" fill={T.mut}>{x0.toLocaleString()}</text>
                     <text x={W-pr} y={H} fontSize="9" fill={T.mut} textAnchor="end">{x1.toLocaleString()}</text>
-                    {/* Trend line */}
-                    <line x1={sx(x0)} y1={sy(ty0)} x2={sx(x1)} y2={sy(ty1)} stroke={color} strokeWidth="1" strokeDasharray="4,3" opacity="0.5"/>
-                    {/* Data line */}
-                    <path d={path} fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                    {/* Data points */}
-                    {pts2.map((p,i)=><circle key={i} cx={p.cx} cy={p.cy} r="3" fill={color} stroke={T.bg} strokeWidth="1.5"/>)}
-                    {/* X axis */}
+                    <path d={path} fill="none" stroke={T.amber} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    {pts2.map((p,i)=><circle key={i} cx={p.cx} cy={p.cy} r="3.5" fill={T.amber} stroke={T.bg} strokeWidth="1.5"/>)}
                     <line x1={pl} y1={H-pb} x2={W-pr} y2={H-pb} stroke={T.bdr} strokeWidth="0.5"/>
                   </svg>
                   <div style={{fontSize:9,color:T.mut,marginTop:4,textTransform:"uppercase",letterSpacing:"0.08em"}}>Cumulative rounds →</div>
+                  <div style={{marginTop:12,padding:"10px 12px",background:T.surf,borderRadius:6,fontSize:11,color:T.mut,lineHeight:1.6}}>
+                    Baseline: <span style={{fontFamily:T.mono,color:T.sub}}>{parseFloat(cbtoSorted[0].measurement).toFixed(4)}"</span> at {cbtoSorted[0].date} · {cbtoSorted.length} readings
+                  </div>
                 </div>
               );
             };
-
-            // CBTO chart using readings
-            const CbtoChart=()=>{
-              if(cbtoSorted.length<2)return(
-                <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:10,padding:"24px 20px",marginBottom:14,textAlign:"center"}}>
-                  <div style={{fontSize:12,fontWeight:600,color:T.sub,marginBottom:6}}>Throat Erosion (CBTO)</div>
-                  <div style={{fontSize:11,color:T.mut,lineHeight:1.6}}>Log 2 or more CBTO readings to track throat erosion over time.</div>
-                </div>
-              );
-              // Map CBTO readings to nearest cumulative round count
-              const cbtoPts=cbtoSorted.map(r=>{
-                const nearestSess=sessWithRnds.filter(s=>s.date<=r.date);
-                const cum=nearestSess.length>0?nearestSess[nearestSess.length-1].cumRnds:0;
-                return{cumRnds:cum,measurement:parseFloat(r.measurement)};
-              });
-              const base=cbtoPts[0].measurement;
-              const erosionPts=cbtoPts.map(p=>({...p,erosion:parseFloat((p.measurement-base).toFixed(4))}));
-              return <AnalyticsChart pts={erosionPts} xKey="cumRnds" yKey="erosion" color={T.amber} label="Throat Erosion (CBTO drift in inches)" yFmt={v=>v>=0?"+"+v.toFixed(3)+'"':v.toFixed(3)+'"'} minPts={2} emptyMsg="Log 2 or more CBTO readings to track throat erosion."/>;
-            };
-
             return(
               <div style={{padding:"16px 16px 0"}}>
-                {velPts.length===0&&esPts.length===0&&cbtoSorted.length<2&&(
-                  <div style={{textAlign:"center",padding:"32px 0 16px"}}>
-                    <div style={{fontSize:13,color:T.sub,lineHeight:1.7,maxWidth:280,margin:"0 auto"}}>
-                      Log sessions with velocity, ES, and SD data, and add CBTO readings to unlock analytics charts.
-                    </div>
+                <div style={{fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.10em",color:T.acc,marginBottom:12}}>Throat Erosion</div>
+                {renderCbtoChart()}
+                <div style={{background:T.bg,border:`1px solid ${T.bdr}`,borderRadius:8,padding:"12px 14px",marginTop:4}}>
+                  <div style={{fontSize:11,color:T.sub,lineHeight:1.7}}>
+                    Velocity, ES, and SD data are logged with sessions but not charted here — meaningful trend analysis requires controlled conditions with the same load. See <a href="https://tightbore.com/articles/why-we-dont-chart-velocity.html" target="_blank" rel="noreferrer" style={{color:T.acc,textDecoration:"none"}}>why in Borely University →</a>
                   </div>
-                )}
-                <AnalyticsChart pts={velPts} xKey="cumRnds" yKey="velocity" color={T.acc} label="Muzzle Velocity (fps)" yFmt={v=>Math.round(v)+" fps"}/>
-                <AnalyticsChart pts={esPts} xKey="cumRnds" yKey="es" color="#2EC4B6" label="Extreme Spread (ES)" yFmt={v=>Math.round(v)+" fps"}/>
-                <AnalyticsChart pts={sdPts} xKey="cumRnds" yKey="sd" color={T.amber} label="Standard Deviation (SD)" yFmt={v=>Math.round(v)+" fps"}/>
-                <CbtoChart/>
+                </div>
               </div>
             );
           })()}
