@@ -906,7 +906,7 @@ function App(){
         groupSize:fGrp?parseFloat(fGrp):null,
         groupDistance:fGrpD?parseFloat(fGrpD):null,groupUnit:fGrpU,
         temperature:fTemp.trim(),altitude:fAlt.trim(),densityAlt:fDensityAlt.trim(),
-        conditions:fCond.trim(),sessionNotes:fNts.trim(),photo:fPhoto||e.photo||null,
+        conditions:fCond.trim(),sessionNotes:fNts.trim(),photo:fPhoto!=null?fPhoto:(e.photo||null),
         modifiedAt:modStamp,
       }:e));
     } else {
