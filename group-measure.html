@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
-  <title>Group Measure — Borely</title>
+  <title>GroupLY — Group Size Measurement by Borely</title>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -13,187 +13,230 @@
       --teal:#2EC4B6;--amber:#C8963A;--amberbg:#2C1E0A;--amberbdr:#6A4A18;
       --danger:#C03030;
     }
-    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
-    header{background:var(--surf);border-bottom:1px solid var(--bdr);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;height:100vh}
+    header{background:var(--surf);border-bottom:1px solid var(--bdr);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
     .brand{font-size:18px;font-weight:700;letter-spacing:0.14em}
     .brand span{color:var(--teal)}
-    .step-label{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--mut)}
+    .step-pill{font-size:11px;letter-spacing:0.10em;text-transform:uppercase;color:#fff;background:var(--acc);border-radius:20px;padding:4px 10px}
 
-    /* ── Upload area ── */
+    /* Upload */
     #upload-zone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px 24px;text-align:center}
-    #upload-zone .icon{font-size:48px;opacity:0.4}
-    #upload-zone h2{font-size:20px;font-weight:600;color:var(--text)}
-    #upload-zone p{font-size:14px;color:var(--sub);line-height:1.6;max-width:300px}
-    .btn{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:13px 28px;font-size:15px;font-weight:500;cursor:pointer;transition:background .2s}
+    .btn{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:13px 28px;font-size:15px;font-weight:500;cursor:pointer}
     .btn:hover{background:var(--acc-light)}
-    .btn-ghost{background:transparent;border:1px solid var(--bdr);color:var(--sub);border-radius:8px;padding:10px 20px;font-size:13px;cursor:pointer}
+    .btn:disabled{opacity:0.45;cursor:default}
+    .btn-ghost{background:transparent;border:1px solid var(--bdr);color:var(--sub);border-radius:8px;padding:9px 18px;font-size:13px;cursor:pointer}
     .btn-ghost:hover{border-color:var(--sub);color:var(--text)}
-    .btn-danger{background:var(--danger)}
-    .btn-sm{padding:8px 16px;font-size:13px;border-radius:6px}
+    .btn-sm{padding:8px 14px;font-size:12px;border-radius:6px}
+    .btn-teal{background:var(--teal);color:#0C0B0A}
+    .btn-teal:hover{background:#3DDDD0}
 
-    /* ── Canvas area ── */
-    #canvas-area{display:none;flex:1;flex-direction:column}
-    #canvas-wrap{position:relative;flex:1;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;touch-action:none}
-    #target-canvas{display:block;max-width:100%;max-height:100%;cursor:crosshair;touch-action:none}
+    /* Canvas */
+    #canvas-area{display:none;flex:1;flex-direction:column;overflow:hidden}
+    #canvas-wrap{position:relative;flex:1;overflow:hidden;background:#111;cursor:crosshair;touch-action:none}
+    #main-canvas{position:absolute;top:0;left:0;touch-action:none}
 
-    /* ── Controls panel ── */
-    #controls{background:var(--surf);border-top:1px solid var(--bdr);padding:16px}
-    .ctrl-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-    .ctrl-label{font-size:11px;letter-spacing:0.10em;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
-    .input-sm{background:var(--bg);border:1px solid var(--bdr);border-radius:6px;color:var(--text);padding:8px 10px;font-size:14px;width:80px;text-align:center}
+    /* Bottom panel */
+    #panel{background:var(--surf);border-top:1px solid var(--bdr);flex-shrink:0}
+    #panel-tabs{display:flex;border-bottom:1px solid var(--bdr)}
+    .ptab{flex:1;padding:10px;font-size:12px;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;text-align:center;color:var(--mut);cursor:pointer;border:none;background:transparent}
+    .ptab.active{color:var(--acc);border-bottom:2px solid var(--acc)}
+    #panel-body{padding:14px 16px}
+
+    /* Tab content */
+    .tab-pane{display:none}
+    .tab-pane.active{display:block}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+    .lbl{font-size:10px;letter-spacing:0.10em;text-transform:uppercase;color:var(--mut);margin-bottom:6px;display:block}
+    .input-sm{background:var(--bg);border:1px solid var(--bdr);border-radius:6px;color:var(--text);padding:7px 10px;font-size:14px;width:72px;text-align:center}
     .input-sm:focus{outline:none;border-color:var(--acc)}
-    .badge{display:inline-flex;align-items:center;gap:5px;background:var(--acc-dim);border:1px solid var(--acc-bdr);border-radius:4px;padding:3px 8px;font-size:11px;color:var(--acc);letter-spacing:0.06em;white-space:nowrap}
-    .badge.amber{background:var(--amberbg);border-color:var(--amberbdr);color:var(--amber)}
-    .badge.teal{background:rgba(46,196,182,.12);border-color:rgba(46,196,182,.3);color:var(--teal)}
+    select.input-sm{width:auto;min-width:120px;text-align:left}
+    .badge{display:inline-flex;align-items:center;gap:5px;border-radius:4px;padding:3px 8px;font-size:11px;letter-spacing:0.04em;white-space:nowrap}
+    .badge-ref{background:var(--amberbg);border:1px solid var(--amberbdr);color:var(--amber)}
+    .badge-impact{background:rgba(46,196,182,.12);border:1px solid rgba(46,196,182,.3);color:var(--teal)}
+    .hint{font-size:11px;color:var(--mut);line-height:1.6}
 
-    /* ── Results ── */
-    #results{display:none;background:var(--surf2);border-top:1px solid var(--bdr);padding:16px}
-    .result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-    .result-card{background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:12px;text-align:center}
-    .result-val{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);line-height:1}
-    .result-unit{font-size:10px;color:var(--mut);text-transform:uppercase;letter-spacing:0.10em;margin-top:4px}
+    /* Results */
+    #results-bar{display:none;background:var(--surf2);border-top:1px solid var(--bdr);padding:12px 16px;flex-shrink:0}
+    .res-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+    .res-card{background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center}
+    .res-val{font-size:20px;font-weight:700;color:var(--text);line-height:1}
+    .res-unit{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:0.10em;margin-top:3px}
+    .res-detail{font-size:11px;color:var(--sub);line-height:1.7;margin-bottom:8px}
 
-    /* ── Instructions overlay ── */
-    #instructions{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;display:flex;align-items:center;justify-content:center;padding:24px}
-    .instr-box{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;padding:28px;max-width:380px;width:100%}
-    .instr-box h3{font-size:17px;font-weight:700;color:var(--text);margin-bottom:16px}
-    .instr-step{display:flex;gap:12px;margin-bottom:14px;align-items:flex-start}
-    .instr-num{width:24px;height:24px;border-radius:50%;background:var(--acc);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-    .instr-text{font-size:14px;color:var(--sub);line-height:1.6}
-    .instr-text strong{color:var(--text)}
+    /* Overlay instructions */
+    #overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:50;display:flex;align-items:flex-end;justify-content:center;padding:0}
+    .sheet{background:var(--surf);border-radius:16px 16px 0 0;padding:24px 20px 36px;width:100%;max-width:480px}
+    .sheet h3{font-size:17px;font-weight:700;color:var(--text);margin-bottom:18px}
+    .step-row{display:flex;gap:12px;margin-bottom:14px}
+    .step-num{width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .step-txt{font-size:14px;color:var(--sub);line-height:1.6}
+    .step-txt strong{color:var(--text)}
 
-    /* ── Zoom hint ── */
-    #zoom-hint{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(12,11,10,.85);border:1px solid var(--bdr);border-radius:6px;padding:6px 12px;font-size:11px;color:var(--sub);pointer-events:none;white-space:nowrap;opacity:0;transition:opacity .3s}
-    #zoom-hint.show{opacity:1}
+    /* Drag handle indicator */
+    .drag-tip{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(12,11,10,.85);border:1px solid var(--bdr);border-radius:6px;padding:5px 12px;font-size:11px;color:var(--sub);pointer-events:none;white-space:nowrap;z-index:10;opacity:0;transition:opacity .3s}
+    .drag-tip.show{opacity:1}
   </style>
 </head>
 <body>
 
 <header>
-  <div class="brand">BORE<span>LY</span> <span style="font-size:13px;color:var(--mut);font-weight:400;letter-spacing:0">Group Measure</span></div>
-  <span class="step-label" id="step-label">Upload Target</span>
+  <div class="brand">GROUP<span>LY</span> <span style="font-size:13px;color:var(--mut);font-weight:400;letter-spacing:0">by Borely</span></div>
+  <span class="step-pill" id="step-pill">Upload</span>
 </header>
 
-<!-- Upload screen -->
+<!-- Upload -->
 <div id="upload-zone">
-  <div class="icon">🎯</div>
-  <h2>Measure Your Group</h2>
-  <p>Upload a photo of your target. You'll mark two reference points at a known distance, then tap each bullet hole.</p>
+  <div style="font-size:48px;opacity:.4">🎯</div>
+  <div style="font-size:20px;font-weight:600">Welcome to GroupLY</div>
+  <div style="font-size:14px;color:var(--sub);line-height:1.6;max-width:300px">Upload a target photo, mark two reference points, then place impact circles over each bullet hole.</div>
   <label class="btn" style="cursor:pointer">
     Choose Photo
     <input type="file" accept="image/*" id="file-input" style="display:none"/>
   </label>
-  <p style="font-size:12px;color:var(--mut)">Works best with a flat-on photo taken square to the target</p>
+  <div style="font-size:12px;color:var(--mut)">Works best with a flat photo taken square to the target</div>
 </div>
 
-<!-- Canvas area -->
+<!-- Main canvas area -->
 <div id="canvas-area">
   <div id="canvas-wrap">
-    <canvas id="target-canvas"></canvas>
-    <div id="zoom-hint">Pinch to zoom · Drag to pan</div>
+    <canvas id="main-canvas"></canvas>
+    <div class="drag-tip" id="drag-tip">Drag markers to position · Pinch to zoom</div>
   </div>
 
-  <div id="controls">
-    <!-- Step 1: Reference points -->
-    <div id="ctrl-ref" style="margin-bottom:12px">
-      <div class="ctrl-label">Step 1 — Tap two reference points at a known distance</div>
-      <div class="ctrl-row">
-        <span class="badge" id="ref1-badge">Ref 1: not set</span>
-        <span class="badge" id="ref2-badge">Ref 2: not set</span>
-        <div style="display:flex;align-items:center;gap:6px;margin-left:auto">
-          <span style="font-size:12px;color:var(--sub)">= </span>
-          <input class="input-sm" type="number" id="ref-dist" value="1" min="0.1" step="0.1"/>
-          <span style="font-size:12px;color:var(--sub)">inch</span>
-        </div>
-        <button class="btn-ghost btn-sm" id="clear-refs">Clear</button>
-      </div>
+  <!-- Panel -->
+  <div id="panel">
+    <div id="panel-tabs">
+      <button class="ptab active" data-tab="ref">① Reference</button>
+      <button class="ptab" data-tab="impact" id="tab-impact">② Impacts</button>
+      <button class="ptab" data-tab="calc" id="tab-calc">③ Calculate</button>
     </div>
-    <!-- Step 2: Impacts -->
-    <div id="ctrl-impacts">
-      <div class="ctrl-label">Step 2 — Tap each bullet hole <span id="impact-count" style="color:var(--acc)">0 marked</span></div>
-      <div class="ctrl-row">
-        <div style="display:flex;align-items:center;gap:6px">
-          <span style="font-size:12px;color:var(--sub)">Distance to target:</span>
-          <input class="input-sm" type="number" id="dist-yards" value="100" min="1"/>
-          <span style="font-size:12px;color:var(--sub)">yards</span>
+    <div id="panel-body">
+
+      <!-- Ref tab -->
+      <div class="tab-pane active" id="pane-ref">
+        <div class="lbl">Tap image to place, then drag to align</div>
+        <div class="row">
+          <span class="badge badge-ref" id="b-r1">Ref 1 — not set</span>
+          <span class="badge badge-ref" id="b-r2">Ref 2 — not set</span>
         </div>
-        <button class="btn-ghost btn-sm" id="undo-impact">Undo Last</button>
-        <button class="btn btn-sm" id="calc-btn" disabled>Calculate</button>
+        <div class="row">
+          <span style="font-size:13px;color:var(--sub)">These two points are</span>
+          <input class="input-sm" type="number" id="ref-dist" value="1.000" min="0.01" step="0.001"/>
+          <span style="font-size:13px;color:var(--sub)">inch apart</span>
+          <button class="btn-ghost btn-sm" id="clear-refs" style="margin-left:auto">Clear</button>
+        </div>
+        <div class="hint">Tip: use the corners of a 1" grid square, or two marks exactly 1" apart on your target.</div>
       </div>
+
+      <!-- Impact tab -->
+      <div class="tab-pane" id="pane-impact">
+        <div class="lbl">Caliber — sets impact circle size</div>
+        <div class="row" style="margin-bottom:12px">
+          <select class="input-sm" id="cal-select">
+            <optgroup label="Rimfire">
+              <option value="0.172">.17 HMR (0.172")</option>
+              <option value="0.204">.204 Ruger (0.204")</option>
+              <option value="0.224">.22 LR / .22 WMR (0.224")</option>
+            </optgroup>
+            <optgroup label="Centerfire Rifle">
+              <option value="0.224">.224 / 5.56mm (.223 / .224")</option>
+              <option value="0.243">.243 Win (0.243")</option>
+              <option value="0.257">.257 / 6.5×47 (0.257")</option>
+              <option value="0.264" selected>6.5mm / .264 (0.264")</option>
+              <option value="0.277">.277 / 6.8mm (0.277")</option>
+              <option value="0.284">7mm / .284 (0.284")</option>
+              <option value="0.308">.308 / 7.62mm (0.308")</option>
+              <option value="0.323">8mm / .323 (0.323")</option>
+              <option value="0.338">.338 (0.338")</option>
+              <option value="0.375">.375 (0.375")</option>
+              <option value="0.416">.416 (0.416")</option>
+              <option value="0.458">.458 (0.458")</option>
+              <option value="0.510">.50 BMG (0.510")</option>
+            </optgroup>
+            <optgroup label="Handgun">
+              <option value="0.355">9mm / .355 (0.355")</option>
+              <option value="0.357">.357 Mag (0.357")</option>
+              <option value="0.400">.40 S&W / 10mm (0.400")</option>
+              <option value="0.452">.45 ACP (0.452")</option>
+            </optgroup>
+          </select>
+          <span class="badge badge-impact" id="b-cal">0.264"</span>
+        </div>
+        <div class="lbl">Tap image to place an impact circle, drag to align over bullet hole</div>
+        <div class="row">
+          <span class="badge badge-impact" id="b-impacts">0 impacts</span>
+          <button class="btn-ghost btn-sm" id="undo-impact">Undo Last</button>
+          <button class="btn-ghost btn-sm" id="clear-impacts" style="margin-left:auto">Clear All</button>
+        </div>
+        <div class="hint">Drag each circle until its edge aligns with the edge of the bullet hole for maximum accuracy.</div>
+      </div>
+
+      <!-- Calc tab -->
+      <div class="tab-pane" id="pane-calc">
+        <div class="row" style="margin-bottom:12px">
+          <span style="font-size:13px;color:var(--sub)">Distance to target:</span>
+          <input class="input-sm" type="number" id="dist-yards" value="100" min="1"/>
+          <span style="font-size:13px;color:var(--sub)">yards</span>
+        </div>
+        <div class="row">
+          <button class="btn btn-teal" id="calc-btn" disabled>Calculate Group</button>
+          <button class="btn-ghost btn-sm" id="reset-btn">New Photo</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
   <!-- Results -->
-  <div id="results">
-    <div class="result-grid">
-      <div class="result-card">
-        <div class="result-val" id="res-inches">—</div>
-        <div class="result-unit">Inches</div>
-      </div>
-      <div class="result-card">
-        <div class="result-val" id="res-moa">—</div>
-        <div class="result-unit">MOA</div>
-      </div>
-      <div class="result-card">
-        <div class="result-val" id="res-shots">—</div>
-        <div class="result-unit">Shots</div>
-      </div>
+  <div id="results-bar">
+    <div class="res-row">
+      <div class="res-card"><div class="res-val" id="r-es-in">—</div><div class="res-unit">ES inches</div></div>
+      <div class="res-card"><div class="res-val" id="r-es-moa">—</div><div class="res-unit">ES MOA</div></div>
+      <div class="res-card"><div class="res-val" id="r-shots">—</div><div class="res-unit">Shots</div></div>
     </div>
+    <div class="res-detail" id="r-detail"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-sm" id="copy-btn">Copy Results</button>
-      <button class="btn-ghost btn-sm" id="reset-btn">New Photo</button>
-      <button class="btn-ghost btn-sm" id="add-more-btn">Add More Impacts</button>
+      <button class="btn-ghost btn-sm" id="hide-results">Hide</button>
     </div>
-    <div id="detail-results" style="margin-top:12px;font-size:12px;color:var(--sub);line-height:1.8"></div>
   </div>
 </div>
 
 <!-- Instructions overlay -->
-<div id="instructions">
-  <div class="instr-box">
-    <h3>How to measure your group</h3>
-    <div class="instr-step">
-      <div class="instr-num">1</div>
-      <div class="instr-text"><strong>Mark two reference points</strong> at a known distance on your target — for example, the edges of a 1" grid square, or two marks exactly 1" apart.</div>
-    </div>
-    <div class="instr-step">
-      <div class="instr-num">2</div>
-      <div class="instr-text"><strong>Enter the distance</strong> between your reference points in inches.</div>
-    </div>
-    <div class="instr-step">
-      <div class="instr-num">3</div>
-      <div class="instr-text"><strong>Tap each bullet hole</strong> to mark your impacts. Pinch to zoom in for precision.</div>
-    </div>
-    <div class="instr-step">
-      <div class="instr-num">4</div>
-      <div class="instr-text"><strong>Hit Calculate</strong> to see group size in inches and MOA.</div>
-    </div>
-    <button class="btn" style="width:100%;margin-top:8px" id="got-it">Got it — start measuring</button>
+<div id="overlay">
+  <div class="sheet">
+    <h3>How GroupLY works</h3>
+    <div class="step-row"><div class="step-num">1</div><div class="step-txt"><strong>Mark two reference points</strong> on the target at a known distance — e.g. corners of a 1" grid square. Tap to place, drag to align precisely.</div></div>
+    <div class="step-row"><div class="step-num">2</div><div class="step-txt"><strong>Select your caliber.</strong> The impact circle will be sized to match your actual bullet diameter. Tap each hole and drag the circle until its edge aligns with the hole edge.</div></div>
+    <div class="step-row"><div class="step-num">3</div><div class="step-txt"><strong>Calculate</strong> — enter your distance to target and hit Calculate for group size in inches and MOA.</div></div>
+    <button class="btn" style="width:100%;margin-top:4px" id="got-it">Start Measuring</button>
   </div>
 </div>
 
 <script>
 // ── State ─────────────────────────────────────────────────────────────────
-const state = {
+const S = {
   img: null,
-  refs: [],       // [{x,y}] canvas coords, max 2
-  impacts: [],    // [{x,y}] canvas coords
-  scale: 1,
-  offsetX: 0,
-  offsetY: 0,
-  minScale: 1,
-  maxScale: 8,
-  mode: 'ref',   // 'ref' | 'impact'
+  scale: 1, minScale: 0.2, maxScale: 10,
+  ox: 0, oy: 0,          // canvas offset within wrap
+  refs: [],              // [{x,y,dragging}] image coords
+  impacts: [],           // [{x,y,dragging}] image coords
+  selected: null,        // {type:'ref'|'impact', idx}
   dragging: false,
-  lastTouch: null,
-  pinchDist: null,
+  panStart: null, panOx: 0, panOy: 0,
+  pinchDist: null, pinchScale: 1, pinchOx: 0, pinchOy: 0, pinchCx: 0, pinchCy: 0,
 };
 
-const canvas = document.getElementById('target-canvas');
+const canvas = document.getElementById('main-canvas');
 const ctx = canvas.getContext('2d');
 const wrap = document.getElementById('canvas-wrap');
 
-// ── File input ────────────────────────────────────────────────────────────
+// ── Caliber sizes ─────────────────────────────────────────────────────────
+function caliberInches() {
+  return parseFloat(document.getElementById('cal-select').value) || 0.264;
+}
+
+// ── File load ─────────────────────────────────────────────────────────────
 document.getElementById('file-input').addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
@@ -201,384 +244,429 @@ document.getElementById('file-input').addEventListener('change', e => {
   reader.onload = ev => {
     const img = new Image();
     img.onload = () => {
-      state.img = img;
-      initCanvas();
+      S.img = img;
+      canvas.width = img.width;
+      canvas.height = img.height;
+      fitToWrap();
       document.getElementById('upload-zone').style.display = 'none';
       document.getElementById('canvas-area').style.display = 'flex';
+      document.getElementById('overlay').style.display = 'flex';
+      showDragTip();
     };
     img.src = ev.target.result;
   };
   reader.readAsDataURL(file);
 });
 
-function initCanvas() {
-  const img = state.img;
-  const wrapW = wrap.clientWidth || window.innerWidth;
-  const wrapH = wrap.clientHeight || (window.innerHeight - 180);
-  const scaleW = wrapW / img.width;
-  const scaleH = wrapH / img.height;
-  state.minScale = Math.min(scaleW, scaleH, 1);
-  state.scale = state.minScale;
-  canvas.width = img.width;
-  canvas.height = img.height;
-  state.offsetX = (wrapW - img.width * state.scale) / 2;
-  state.offsetY = (wrapH - img.height * state.scale) / 2;
+function fitToWrap() {
+  const ww = wrap.clientWidth, wh = wrap.clientHeight;
+  const sw = ww / S.img.width, sh = wh / S.img.height;
+  S.minScale = Math.min(sw, sh) * 0.95;
+  S.scale = S.minScale;
+  S.ox = (ww - S.img.width * S.scale) / 2;
+  S.oy = (wh - S.img.height * S.scale) / 2;
+  applyTransform();
   draw();
-  showZoomHint();
+}
+
+function applyTransform() {
+  canvas.style.width  = S.img.width  * S.scale + 'px';
+  canvas.style.height = S.img.height * S.scale + 'px';
+  canvas.style.left   = S.ox + 'px';
+  canvas.style.top    = S.oy + 'px';
 }
 
 // ── Draw ──────────────────────────────────────────────────────────────────
 function draw() {
-  const img = state.img;
-  if (!img) return;
-  const wrapW = wrap.clientWidth || window.innerWidth;
-  const wrapH = wrap.clientHeight || (window.innerHeight - 180);
-
-  canvas.style.width  = Math.round(img.width  * state.scale) + 'px';
-  canvas.style.height = Math.round(img.height * state.scale) + 'px';
-  canvas.style.transform = `translate(${state.offsetX}px,${state.offsetY}px)`;
-  canvas.style.transformOrigin = '0 0';
-
+  if (!S.img) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(img, 0, 0);
+  ctx.drawImage(S.img, 0, 0);
 
-  const r = 14 / state.scale; // marker radius in image coords
+  const r  = 12 / S.scale;  // ref marker radius
+  const cal = caliberInches();
 
-  // Reference points
-  state.refs.forEach((pt, i) => {
+  // Reference line
+  if (S.refs.length === 2) {
     ctx.beginPath();
-    ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(200,150,58,0.35)';
+    ctx.moveTo(S.refs[0].x, S.refs[0].y);
+    ctx.lineTo(S.refs[1].x, S.refs[1].y);
+    ctx.strokeStyle = 'rgba(200,150,58,0.55)';
+    ctx.lineWidth = 1.5 / S.scale;
+    ctx.setLineDash([6/S.scale, 4/S.scale]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Reference markers
+  S.refs.forEach((pt, i) => {
+    const isSelected = S.selected?.type === 'ref' && S.selected.idx === i;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, r, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(200,150,58,0.25)';
     ctx.fill();
-    ctx.strokeStyle = '#C8963A';
-    ctx.lineWidth = 2.5 / state.scale;
+    ctx.strokeStyle = isSelected ? '#FFD080' : '#C8963A';
+    ctx.lineWidth = (isSelected ? 3 : 2) / S.scale;
     ctx.stroke();
     // crosshair
     ctx.beginPath();
-    ctx.moveTo(pt.x - r*1.4, pt.y); ctx.lineTo(pt.x + r*1.4, pt.y);
-    ctx.moveTo(pt.x, pt.y - r*1.4); ctx.lineTo(pt.x, pt.y + r*1.4);
-    ctx.strokeStyle = '#C8963A';
-    ctx.lineWidth = 1.5 / state.scale;
+    ctx.moveTo(pt.x-r*1.5, pt.y); ctx.lineTo(pt.x+r*1.5, pt.y);
+    ctx.moveTo(pt.x, pt.y-r*1.5); ctx.lineTo(pt.x, pt.y+r*1.5);
+    ctx.strokeStyle = isSelected ? '#FFD080' : '#C8963A';
+    ctx.lineWidth = 1.5 / S.scale;
     ctx.stroke();
     // label
-    ctx.font = `bold ${Math.round(13/state.scale)}px -apple-system,sans-serif`;
+    ctx.font = `bold ${Math.round(12/S.scale)}px -apple-system,sans-serif`;
     ctx.fillStyle = '#C8963A';
     ctx.textAlign = 'center';
-    ctx.fillText(`R${i+1}`, pt.x, pt.y - r - 4/state.scale);
+    ctx.fillText(`R${i+1}`, pt.x, pt.y - r - 5/S.scale);
   });
 
-  // Reference line
-  if (state.refs.length === 2) {
-    const [a, b] = state.refs;
-    ctx.beginPath();
-    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-    ctx.strokeStyle = 'rgba(200,150,58,0.6)';
-    ctx.lineWidth = 1.5 / state.scale;
-    ctx.setLineDash([6/state.scale, 4/state.scale]);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
+  // Impact circles — sized to caliber
+  // pxPerInch computed from refs if available
+  const pxPerInch = getPxPerInch();
+  const impactR = pxPerInch ? (cal / 2) * pxPerInch : 18 / S.scale;
 
-  // Impacts
-  state.impacts.forEach((pt, i) => {
+  S.impacts.forEach((pt, i) => {
+    const isSelected = S.selected?.type === 'impact' && S.selected.idx === i;
     ctx.beginPath();
-    ctx.arc(pt.x, pt.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(46,196,182,0.3)';
+    ctx.arc(pt.x, pt.y, impactR, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(46,196,182,0.18)';
     ctx.fill();
-    ctx.strokeStyle = '#2EC4B6';
-    ctx.lineWidth = 2.5 / state.scale;
+    ctx.strokeStyle = isSelected ? '#80FFEE' : '#2EC4B6';
+    ctx.lineWidth = (isSelected ? 3 : 2) / S.scale;
     ctx.stroke();
+    // center dot
     ctx.beginPath();
-    ctx.arc(pt.x, pt.y, 3/state.scale, 0, Math.PI*2);
+    ctx.arc(pt.x, pt.y, 3/S.scale, 0, Math.PI*2);
     ctx.fillStyle = '#2EC4B6';
     ctx.fill();
-    ctx.font = `bold ${Math.round(12/state.scale)}px -apple-system,sans-serif`;
+    // number
+    ctx.font = `bold ${Math.round(11/S.scale)}px -apple-system,sans-serif`;
     ctx.fillStyle = '#2EC4B6';
     ctx.textAlign = 'center';
-    ctx.fillText(i+1, pt.x, pt.y - r - 3/state.scale);
+    ctx.fillText(i+1, pt.x, pt.y - impactR - 4/S.scale);
   });
 
   // Group bounding box
-  if (state.impacts.length >= 2) {
-    const [minX, maxX, minY, maxY] = bounds(state.impacts);
-    ctx.strokeStyle = 'rgba(106,138,90,0.5)';
-    ctx.lineWidth = 1.5 / state.scale;
-    ctx.setLineDash([5/state.scale, 4/state.scale]);
-    ctx.strokeRect(minX - r, minY - r, (maxX - minX) + r*2, (maxY - minY) + r*2);
+  if (S.impacts.length >= 2 && pxPerInch) {
+    const xs = S.impacts.map(p=>p.x), ys = S.impacts.map(p=>p.y);
+    const x0=Math.min(...xs)-impactR, y0=Math.min(...ys)-impactR;
+    const x1=Math.max(...xs)+impactR, y1=Math.max(...ys)+impactR;
+    ctx.strokeStyle = 'rgba(106,138,90,0.4)';
+    ctx.lineWidth = 1.5/S.scale;
+    ctx.setLineDash([5/S.scale,4/S.scale]);
+    ctx.strokeRect(x0,y0,x1-x0,y1-y0);
     ctx.setLineDash([]);
   }
 }
 
-function bounds(pts) {
-  return [
-    Math.min(...pts.map(p=>p.x)),
-    Math.max(...pts.map(p=>p.x)),
-    Math.min(...pts.map(p=>p.y)),
-    Math.max(...pts.map(p=>p.y)),
-  ];
+function getPxPerInch() {
+  if (S.refs.length < 2) return null;
+  const d = dist(S.refs[0], S.refs[1]);
+  const refIn = parseFloat(document.getElementById('ref-dist').value) || 1;
+  return d / refIn;
 }
 
-// ── Canvas → image coords ─────────────────────────────────────────────────
-function canvasCoords(clientX, clientY) {
-  const rect = canvas.getBoundingClientRect();
-  const cx = (clientX - rect.left) / (rect.width  / canvas.width);
-  const cy = (clientY - rect.top)  / (rect.height / canvas.height);
-  return { x: cx, y: cy };
+// ── Hit test — find marker within tap radius ──────────────────────────────
+function hitTest(imgX, imgY) {
+  const hitR = 24 / S.scale;
+  const pxPerInch = getPxPerInch();
+  const cal = caliberInches();
+  const impactR = pxPerInch ? (cal/2)*pxPerInch : 18/S.scale;
+
+  // Check impacts first (on top)
+  for (let i = S.impacts.length-1; i >= 0; i--) {
+    if (dist(S.impacts[i], {x:imgX,y:imgY}) < Math.max(impactR, hitR))
+      return {type:'impact', idx:i};
+  }
+  // Check refs
+  for (let i = S.refs.length-1; i >= 0; i--) {
+    if (dist(S.refs[i], {x:imgX,y:imgY}) < hitR)
+      return {type:'ref', idx:i};
+  }
+  return null;
 }
 
-// ── Touch / mouse events ──────────────────────────────────────────────────
-let lastTap = 0;
-
-canvas.addEventListener('click', handleTap);
-
-function handleTap(e) {
-  if (state.dragging) return;
-  const pt = canvasCoords(e.clientX, e.clientY);
-  placeMarker(pt);
+// ── Coords ────────────────────────────────────────────────────────────────
+function wrapToImg(cx, cy) {
+  return { x: (cx - S.ox) / S.scale, y: (cy - S.oy) / S.scale };
 }
+function clampImg(pt) {
+  return { x: Math.max(0, Math.min(S.img.width,  pt.x)),
+           y: Math.max(0, Math.min(S.img.height, pt.y)) };
+}
+function dist(a,b) { return Math.sqrt((a.x-b.x)**2+(a.y-b.y)**2); }
 
-canvas.addEventListener('touchend', e => {
-  if (e.touches.length > 0) return;
-  if (state.pinchDist !== null) { state.pinchDist = null; return; }
-  const t = e.changedTouches[0];
-  const pt = canvasCoords(t.clientX, t.clientY);
-  const now = Date.now();
-  if (now - lastTap < 300) return; // ignore double-tap
-  lastTap = now;
-  placeMarker(pt);
-});
+// ── Pointer events (unified mouse + touch) ────────────────────────────────
+let pointerStart = null;
+let pointerMoved = false;
+let dragTarget = null;
+let dragOffX = 0, dragOffY = 0;
 
-function placeMarker(pt) {
-  if (state.refs.length < 2) {
-    if (state.refs.length === 1 && dist(state.refs[0], pt) < 8/state.scale) return;
-    state.refs.push(pt);
-    updateRefBadges();
+function onPointerDown(cx, cy) {
+  pointerStart = {cx,cy};
+  pointerMoved = false;
+  const img = wrapToImg(cx, cy);
+  const hit = hitTest(img.x, img.y);
+  if (hit) {
+    dragTarget = hit;
+    const pt = hit.type==='ref' ? S.refs[hit.idx] : S.impacts[hit.idx];
+    dragOffX = img.x - pt.x;
+    dragOffY = img.y - pt.y;
+    S.selected = hit;
   } else {
-    state.impacts.push(pt);
-    updateImpactCount();
+    dragTarget = null;
+    S.selected = null;
+    S.panStart = {cx, cy};
+    S.panOx = S.ox; S.panOy = S.oy;
   }
   draw();
-  updateCalcBtn();
 }
 
-// ── Pan ───────────────────────────────────────────────────────────────────
-let panStart = null;
-let panOffset = null;
+function onPointerMove(cx, cy) {
+  if (!pointerStart) return;
+  const dx = cx - pointerStart.cx, dy = cy - pointerStart.cy;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) pointerMoved = true;
 
-canvas.addEventListener('mousedown', e => {
-  state.dragging = false;
-  panStart = { x: e.clientX, y: e.clientY };
-  panOffset = { x: state.offsetX, y: state.offsetY };
-});
-window.addEventListener('mousemove', e => {
-  if (!panStart) return;
-  const dx = e.clientX - panStart.x;
-  const dy = e.clientY - panStart.y;
-  if (Math.abs(dx) > 4 || Math.abs(dy) > 4) state.dragging = true;
-  if (state.dragging) {
-    state.offsetX = panOffset.x + dx;
-    state.offsetY = panOffset.y + dy;
+  if (dragTarget) {
+    const img = clampImg(wrapToImg(cx - dragOffX*S.scale, cy - dragOffY*S.scale));
+    // Recalculate properly
+    const rawImg = wrapToImg(cx, cy);
+    const pt = { x: rawImg.x - dragOffX, y: rawImg.y - dragOffY };
+    const clamped = clampImg(pt);
+    if (dragTarget.type === 'ref') S.refs[dragTarget.idx] = {...S.refs[dragTarget.idx], ...clamped};
+    else S.impacts[dragTarget.idx] = {...S.impacts[dragTarget.idx], ...clamped};
     draw();
+    updateUI();
+  } else if (S.panStart && pointerMoved) {
+    S.ox = S.panOx + dx;
+    S.oy = S.panOy + dy;
+    applyTransform();
   }
-});
-window.addEventListener('mouseup', () => { panStart = null; setTimeout(()=>{ state.dragging=false; }, 50); });
+}
 
-// ── Pinch zoom ────────────────────────────────────────────────────────────
-canvas.addEventListener('touchstart', e => {
-  if (e.touches.length === 2) {
-    state.pinchDist = touchDist(e.touches);
-    state.pinchScale = state.scale;
-    state.pinchOX = state.offsetX;
-    state.pinchOY = state.offsetY;
-    const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-    const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-    state.pinchCenter = { x: cx, y: cy };
-  } else if (e.touches.length === 1) {
-    panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    panOffset = { x: state.offsetX, y: state.offsetY };
-    state.dragging = false;
-  }
-}, { passive: true });
-
-canvas.addEventListener('touchmove', e => {
-  e.preventDefault();
-  if (e.touches.length === 2 && state.pinchDist !== null) {
-    const newDist = touchDist(e.touches);
-    const ratio = newDist / state.pinchDist;
-    const newScale = Math.min(state.maxScale, Math.max(state.minScale, state.pinchScale * ratio));
-    const cx = state.pinchCenter.x;
-    const cy = state.pinchCenter.y;
-    state.offsetX = cx - (cx - state.pinchOX) * (newScale / state.pinchScale);
-    state.offsetY = cy - (cy - state.pinchOY) * (newScale / state.pinchScale);
-    state.scale = newScale;
-    draw();
-  } else if (e.touches.length === 1 && panStart) {
-    const dx = e.touches[0].clientX - panStart.x;
-    const dy = e.touches[0].clientY - panStart.y;
-    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) state.dragging = true;
-    if (state.dragging) {
-      state.offsetX = panOffset.x + dx;
-      state.offsetY = panOffset.y + dy;
-      draw();
+function onPointerUp(cx, cy) {
+  if (!pointerMoved && !dragTarget) {
+    // Tap — place new marker
+    const img = clampImg(wrapToImg(cx, cy));
+    const activeTab = document.querySelector('.ptab.active').dataset.tab;
+    if (activeTab === 'ref' && S.refs.length < 2) {
+      S.refs.push({x:img.x, y:img.y});
+      S.selected = {type:'ref', idx:S.refs.length-1};
+    } else if (activeTab === 'impact') {
+      S.impacts.push({x:img.x, y:img.y});
+      S.selected = {type:'impact', idx:S.impacts.length-1};
     }
+    draw();
+    updateUI();
   }
-}, { passive: false });
+  dragTarget = null;
+  pointerStart = null;
+  S.panStart = null;
+}
 
-canvas.addEventListener('touchend', () => { panStart = null; }, { passive: true });
+// Mouse
+wrap.addEventListener('mousedown', e => { e.preventDefault(); onPointerDown(e.offsetX, e.offsetY); });
+window.addEventListener('mousemove', e => {
+  if (!pointerStart) return;
+  const r = wrap.getBoundingClientRect();
+  onPointerMove(e.clientX - r.left, e.clientY - r.top);
+});
+window.addEventListener('mouseup', e => {
+  if (!pointerStart) return;
+  const r = wrap.getBoundingClientRect();
+  onPointerUp(e.clientX - r.left, e.clientY - r.top);
+});
+
+// Touch
+wrap.addEventListener('touchstart', e => {
+  if (e.touches.length === 2) {
+    S.pinchDist = touchDist(e.touches);
+    S.pinchScale = S.scale;
+    S.pinchOx = S.ox; S.pinchOy = S.oy;
+    S.pinchCx = (e.touches[0].clientX + e.touches[1].clientX)/2;
+    S.pinchCy = (e.touches[0].clientY + e.touches[1].clientY)/2;
+    pointerStart = null; dragTarget = null;
+    return;
+  }
+  S.pinchDist = null;
+  const r = wrap.getBoundingClientRect();
+  const t = e.touches[0];
+  onPointerDown(t.clientX - r.left, t.clientY - r.top);
+}, {passive:true});
+
+wrap.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (e.touches.length === 2 && S.pinchDist !== null) {
+    const nd = touchDist(e.touches);
+    const ratio = nd / S.pinchDist;
+    const ns = Math.min(S.maxScale, Math.max(S.minScale, S.pinchScale * ratio));
+    const r = wrap.getBoundingClientRect();
+    const cx = S.pinchCx - r.left, cy = S.pinchCy - r.top;
+    S.ox = cx - (cx - S.pinchOx) * (ns/S.pinchScale);
+    S.oy = cy - (cy - S.pinchOy) * (ns/S.pinchScale);
+    S.scale = ns;
+    applyTransform(); draw();
+    return;
+  }
+  if (!pointerStart) return;
+  const r = wrap.getBoundingClientRect();
+  const t = e.touches[0];
+  onPointerMove(t.clientX - r.left, t.clientY - r.top);
+}, {passive:false});
+
+wrap.addEventListener('touchend', e => {
+  if (S.pinchDist !== null) { S.pinchDist = null; return; }
+  const r = wrap.getBoundingClientRect();
+  const t = e.changedTouches[0];
+  onPointerUp(t.clientX - r.left, t.clientY - r.top);
+}, {passive:true});
 
 // Mouse wheel zoom
-canvas.addEventListener('wheel', e => {
+wrap.addEventListener('wheel', e => {
   e.preventDefault();
-  const rect = wrap.getBoundingClientRect();
-  const cx = e.clientX - rect.left;
-  const cy = e.clientY - rect.top;
-  const delta = e.deltaY > 0 ? 0.85 : 1.15;
-  const newScale = Math.min(state.maxScale, Math.max(state.minScale, state.scale * delta));
-  state.offsetX = cx - (cx - state.offsetX) * (newScale / state.scale);
-  state.offsetY = cy - (cy - state.offsetY) * (newScale / state.scale);
-  state.scale = newScale;
-  draw();
-}, { passive: false });
+  const r = wrap.getBoundingClientRect();
+  const cx = e.clientX - r.left, cy = e.clientY - r.top;
+  const delta = e.deltaY > 0 ? 0.88 : 1.14;
+  const ns = Math.min(S.maxScale, Math.max(S.minScale, S.scale * delta));
+  S.ox = cx - (cx - S.ox) * (ns/S.scale);
+  S.oy = cy - (cy - S.oy) * (ns/S.scale);
+  S.scale = ns;
+  applyTransform(); draw();
+}, {passive:false});
 
 function touchDist(touches) {
   const dx = touches[0].clientX - touches[1].clientX;
   const dy = touches[0].clientY - touches[1].clientY;
-  return Math.sqrt(dx*dx + dy*dy);
+  return Math.sqrt(dx*dx+dy*dy);
 }
-function dist(a, b) { return Math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2); }
 
 // ── UI updates ────────────────────────────────────────────────────────────
-function updateRefBadges() {
-  const b1 = document.getElementById('ref1-badge');
-  const b2 = document.getElementById('ref2-badge');
-  b1.textContent = state.refs[0] ? 'Ref 1: ✓' : 'Ref 1: not set';
-  b1.className = 'badge' + (state.refs[0] ? ' amber' : '');
-  b2.textContent = state.refs[1] ? 'Ref 2: ✓' : 'Ref 2: not set';
-  b2.className = 'badge' + (state.refs[1] ? ' amber' : '');
-  document.getElementById('step-label').textContent =
-    state.refs.length < 2 ? 'Mark Reference Points' : 'Mark Bullet Holes';
+function updateUI() {
+  // Ref badges
+  document.getElementById('b-r1').textContent = S.refs[0] ? 'Ref 1 ✓ — drag to adjust' : 'Ref 1 — not set';
+  document.getElementById('b-r2').textContent = S.refs[1] ? 'Ref 2 ✓ — drag to adjust' : 'Ref 2 — not set';
+  // Impact count
+  document.getElementById('b-impacts').textContent = `${S.impacts.length} impact${S.impacts.length!==1?'s':''}`;
+  // Caliber badge
+  document.getElementById('b-cal').textContent = caliberInches().toFixed(3) + '"';
+  // Calc button
+  document.getElementById('calc-btn').disabled = S.refs.length < 2 || S.impacts.length < 2;
+  // Step pill
+  const n = S.refs.length < 2 ? 'Reference Points' : S.impacts.length < 1 ? 'Mark Impacts' : `${S.impacts.length} Impact${S.impacts.length!==1?'s':''}`;
+  document.getElementById('step-pill').textContent = n;
 }
 
-function updateImpactCount() {
-  const n = state.impacts.length;
-  document.getElementById('impact-count').textContent =
-    n === 0 ? '0 marked' : `${n} marked`;
-  document.getElementById('step-label').textContent =
-    n === 0 ? 'Mark Bullet Holes' : `${n} impact${n!==1?'s':''} marked`;
-}
-
-function updateCalcBtn() {
-  document.getElementById('calc-btn').disabled =
-    state.refs.length < 2 || state.impacts.length < 2;
-}
+// ── Tabs ──────────────────────────────────────────────────────────────────
+document.querySelectorAll('.ptab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ptab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('pane-'+btn.dataset.tab).classList.add('active');
+  });
+});
 
 // ── Controls ──────────────────────────────────────────────────────────────
+document.getElementById('cal-select').addEventListener('change', () => { updateUI(); draw(); });
+document.getElementById('ref-dist').addEventListener('input', () => { draw(); });
+
 document.getElementById('clear-refs').addEventListener('click', () => {
-  state.refs = []; state.impacts = [];
-  updateRefBadges(); updateImpactCount(); updateCalcBtn();
-  document.getElementById('results').style.display = 'none';
-  draw();
+  S.refs=[]; S.impacts=[]; S.selected=null;
+  document.getElementById('results-bar').style.display='none';
+  updateUI(); draw();
 });
 
 document.getElementById('undo-impact').addEventListener('click', () => {
-  if (state.impacts.length > 0) {
-    state.impacts.pop();
-    updateImpactCount(); updateCalcBtn(); draw();
-    document.getElementById('results').style.display = 'none';
-  }
+  if (S.impacts.length>0) { S.impacts.pop(); S.selected=null; updateUI(); draw(); document.getElementById('results-bar').style.display='none'; }
 });
 
-document.getElementById('add-more-btn').addEventListener('click', () => {
-  document.getElementById('results').style.display = 'none';
-  updateCalcBtn();
+document.getElementById('clear-impacts').addEventListener('click', () => {
+  S.impacts=[]; S.selected=null; updateUI(); draw(); document.getElementById('results-bar').style.display='none';
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  state.img = null; state.refs = []; state.impacts = [];
-  document.getElementById('canvas-area').style.display = 'none';
-  document.getElementById('upload-zone').style.display = 'flex';
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('file-input').value = '';
+  S.img=null; S.refs=[]; S.impacts=[]; S.selected=null;
+  document.getElementById('canvas-area').style.display='none';
+  document.getElementById('upload-zone').style.display='flex';
+  document.getElementById('results-bar').style.display='none';
+  document.getElementById('file-input').value='';
+  updateUI();
+});
+
+document.getElementById('hide-results').addEventListener('click', () => {
+  document.getElementById('results-bar').style.display='none';
 });
 
 // ── Calculate ─────────────────────────────────────────────────────────────
-document.getElementById('calc-btn').addEventListener('click', calculate);
-
-function calculate() {
-  const [r1, r2] = state.refs;
-  const refPxDist = dist(r1, r2);
-  const refInches = parseFloat(document.getElementById('ref-dist').value) || 1;
-  const pxPerInch = refPxDist / refInches;
+document.getElementById('calc-btn').addEventListener('click', () => {
+  const pxPerInch = getPxPerInch();
+  if (!pxPerInch || S.impacts.length < 2) return;
   const yards = parseFloat(document.getElementById('dist-yards').value) || 100;
-  const impacts = state.impacts;
 
-  // Extreme spread — max center-to-center distance
-  let maxDist = 0;
-  let farthestPair = [0, 1];
-  for (let i = 0; i < impacts.length; i++) {
-    for (let j = i+1; j < impacts.length; j++) {
-      const d = dist(impacts[i], impacts[j]);
-      if (d > maxDist) { maxDist = d; farthestPair = [i, j]; }
+  // Extreme spread
+  let maxD=0, fp=[0,1];
+  for (let i=0;i<S.impacts.length;i++)
+    for (let j=i+1;j<S.impacts.length;j++) {
+      const d=dist(S.impacts[i],S.impacts[j]);
+      if(d>maxD){maxD=d;fp=[i,j];}
     }
-  }
-  const groupInches = maxDist / pxPerInch;
+  const esIn = maxD/pxPerInch;
+  const moaFactor = 100/(yards*1.047);
+  const esMOA = esIn*moaFactor;
 
   // Mean radius
-  const cx = impacts.reduce((s,p)=>s+p.x,0)/impacts.length;
-  const cy = impacts.reduce((s,p)=>s+p.y,0)/impacts.length;
-  const meanRadius = impacts.reduce((s,p)=>s+dist(p,{x:cx,y:cy}),0)/impacts.length/pxPerInch;
+  const cx=S.impacts.reduce((s,p)=>s+p.x,0)/S.impacts.length;
+  const cy=S.impacts.reduce((s,p)=>s+p.y,0)/S.impacts.length;
+  const mrIn=S.impacts.reduce((s,p)=>s+dist(p,{x:cx,y:cy}),0)/S.impacts.length/pxPerInch;
+  const mrMOA=mrIn*moaFactor;
 
-  // MOA: 1 MOA = 1.047" per 100 yards
-  const moaPerInch = 100 / (yards * 1.047);
-  const groupMOA = groupInches * moaPerInch;
-  const mrMOA = meanRadius * moaPerInch;
+  document.getElementById('r-es-in').textContent = esIn.toFixed(3)+'"';
+  document.getElementById('r-es-moa').textContent = esMOA.toFixed(2);
+  document.getElementById('r-shots').textContent = S.impacts.length;
+  document.getElementById('r-detail').innerHTML =
+    `<strong>Extreme Spread:</strong> ${esIn.toFixed(3)}" &middot; ${esMOA.toFixed(2)} MOA (shots ${fp[0]+1} &amp; ${fp[1]+1})<br>` +
+    `<strong>Mean Radius:</strong> ${mrIn.toFixed(3)}" &middot; ${mrMOA.toFixed(2)} MOA<br>` +
+    `<strong>Scale:</strong> ${pxPerInch.toFixed(1)} px/in &middot; ${document.getElementById('ref-dist').value}" ref &middot; ${yards} yds`;
 
-  document.getElementById('res-inches').textContent = groupInches.toFixed(3) + '"';
-  document.getElementById('res-moa').textContent = groupMOA.toFixed(2);
-  document.getElementById('res-shots').textContent = impacts.length;
-  document.getElementById('detail-results').innerHTML =
-    `<strong style="color:var(--text)">Extreme Spread:</strong> ${groupInches.toFixed(3)}" · ${groupMOA.toFixed(2)} MOA<br>` +
-    `<strong style="color:var(--text)">Mean Radius:</strong> ${meanRadius.toFixed(3)}" · ${mrMOA.toFixed(2)} MOA<br>` +
-    `<strong style="color:var(--text)">Scale:</strong> ${pxPerInch.toFixed(1)} px/inch · ${refInches}" reference at ${yards} yards<br>` +
-    `<strong style="color:var(--text)">Farthest pair:</strong> shots ${farthestPair[0]+1} and ${farthestPair[1]+1}`;
+  document.getElementById('results-bar').style.display='block';
 
-  document.getElementById('results').style.display = 'block';
-
-  // Highlight farthest pair
+  // Draw farthest pair line
   draw();
-  const [fa, fb] = [impacts[farthestPair[0]], impacts[farthestPair[1]]];
-  const r = 14 / state.scale;
+  const [fa,fb]=[S.impacts[fp[0]],S.impacts[fp[1]]];
   ctx.beginPath();
-  ctx.moveTo(fa.x, fa.y); ctx.lineTo(fb.x, fb.y);
-  ctx.strokeStyle = 'rgba(192,48,48,0.7)';
-  ctx.lineWidth = 2 / state.scale;
-  ctx.setLineDash([6/state.scale, 3/state.scale]);
+  ctx.moveTo(fa.x,fa.y); ctx.lineTo(fb.x,fb.y);
+  ctx.strokeStyle='rgba(192,48,48,0.75)';
+  ctx.lineWidth=2/S.scale;
+  ctx.setLineDash([6/S.scale,3/S.scale]);
   ctx.stroke();
   ctx.setLineDash([]);
-}
+});
 
 document.getElementById('copy-btn').addEventListener('click', () => {
-  const inches = document.getElementById('res-inches').textContent;
-  const moa = document.getElementById('res-moa').textContent;
-  const shots = document.getElementById('res-shots').textContent;
+  const es = document.getElementById('r-es-in').textContent;
+  const moa = document.getElementById('r-es-moa').textContent;
+  const shots = document.getElementById('r-shots').textContent;
   const yards = document.getElementById('dist-yards').value;
-  const text = `Group: ${inches} / ${moa} MOA (${shots} shots @ ${yards}yds)`;
-  navigator.clipboard?.writeText(text).then(() => {
-    const btn = document.getElementById('copy-btn');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy Results', 2000);
+  const cal = document.getElementById('cal-select').options[document.getElementById('cal-select').selectedIndex].text.split(' ')[0];
+  const text = `GroupLY: ${es} / ${moa} MOA · ${shots} shots · ${yards}yds · ${cal}`;
+  navigator.clipboard?.writeText(text).then(()=>{
+    const b=document.getElementById('copy-btn');
+    b.textContent='Copied!';
+    setTimeout(()=>b.textContent='Copy Results',2000);
   });
 });
 
 // ── Instructions ──────────────────────────────────────────────────────────
 document.getElementById('got-it').addEventListener('click', () => {
-  document.getElementById('instructions').style.display = 'none';
+  document.getElementById('overlay').style.display='none';
+  showDragTip();
 });
 
-function showZoomHint() {
-  const h = document.getElementById('zoom-hint');
-  h.classList.add('show');
-  setTimeout(() => h.classList.remove('show'), 3000);
+function showDragTip() {
+  const t=document.getElementById('drag-tip');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
 }
 </script>
 </body>
