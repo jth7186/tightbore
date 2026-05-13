@@ -24,7 +24,7 @@
     #upload-zone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px 24px;text-align:center}
 
     /* Viewport — fixed size, image moves inside */
-    #viewport{flex:1;position:relative;overflow:hidden;background:#111;touch-action:none;cursor:grab}
+    #viewport{flex:1;position:relative;overflow:hidden;background:#111;touch-action:none;cursor:grab;min-height:0}
     #viewport:active{cursor:grabbing}
     #photo{position:absolute;transform-origin:0 0;will-change:transform;user-select:none;-webkit-user-select:none;pointer-events:none}
 
@@ -41,9 +41,9 @@
     #overlay-canvas{position:absolute;top:0;left:0;pointer-events:none;z-index:4}
 
     /* Bottom panel */
-    #panel{background:var(--surf);border-top:1px solid var(--bdr);flex-shrink:0;z-index:10}
+    #panel{background:var(--surf);border-top:1px solid var(--bdr);flex-shrink:0;z-index:10;min-height:90px}
     #instr{padding:10px 16px 6px;font-size:13px;color:var(--sub);line-height:1.5;min-height:40px}
-    #actions{display:flex;gap:8px;padding:8px 16px 14px;align-items:center;flex-wrap:wrap}
+    #actions{display:flex;gap:8px;padding:8px 16px 14px;align-items:center;flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
     .btn{background:var(--acc);color:#fff;border:none;border-radius:8px;padding:12px 24px;font-size:15px;font-weight:500;cursor:pointer;flex-shrink:0}
     .btn:hover{background:var(--acc-light)}
     .btn:disabled{opacity:0.4;cursor:default}
@@ -70,14 +70,51 @@
 <body>
 
 <header>
-  <div class="brand">GROUP<span>LY</span> <span style="font-size:13px;color:var(--mut);font-weight:400;letter-spacing:0">by Borely</span></div>
+  <div class="brand">GROUP<span>LY</span> <span style="font-size:13px;color:var(--mut);font-weight:400;letter-spacing:0.04em">by BORE<span style="color:var(--teal)">LY</span></span></div>
   <span class="step-pill" id="step-pill">Upload</span>
 </header>
 
 <!-- Upload -->
 <div id="upload-zone">
-  <div style="font-size:48px;opacity:.4">🎯</div>
-  <div style="font-size:20px;font-weight:600;margin-bottom:4px">Welcome to GroupLY</div>
+  <svg width="140" height="140" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:4px">
+    <!-- Target rings -->
+    <circle cx="70" cy="70" r="66" fill="none" stroke="#38342C" stroke-width="1.5"/>
+    <circle cx="70" cy="70" r="52" fill="none" stroke="#38342C" stroke-width="1.5"/>
+    <circle cx="70" cy="70" r="38" fill="none" stroke="#38342C" stroke-width="1.5"/>
+    <circle cx="70" cy="70" r="24" fill="none" stroke="#38342C" stroke-width="1.5"/>
+    <circle cx="70" cy="70" r="10" fill="#C03030" opacity="0.7"/>
+    <!-- Crosshair -->
+    <line x1="70" y1="4" x2="70" y2="34" stroke="#5C5850" stroke-width="1.5"/>
+    <line x1="70" y1="106" x2="70" y2="136" stroke="#5C5850" stroke-width="1.5"/>
+    <line x1="4" y1="70" x2="34" y2="70" stroke="#5C5850" stroke-width="1.5"/>
+    <line x1="106" y1="70" x2="136" y2="70" stroke="#5C5850" stroke-width="1.5"/>
+    <!-- Bullet holes with teal circles -->
+    <circle cx="62" cy="58" r="5.5" fill="none" stroke="#2EC4B6" stroke-width="2" opacity="0.9"/>
+    <circle cx="62" cy="58" r="1.5" fill="#2EC4B6"/>
+    <circle cx="76" cy="64" r="5.5" fill="none" stroke="#2EC4B6" stroke-width="2" opacity="0.9"/>
+    <circle cx="76" cy="64" r="1.5" fill="#2EC4B6"/>
+    <circle cx="68" cy="74" r="5.5" fill="none" stroke="#2EC4B6" stroke-width="2" opacity="0.9"/>
+    <circle cx="68" cy="74" r="1.5" fill="#2EC4B6"/>
+    <circle cx="58" cy="70" r="5.5" fill="none" stroke="#2EC4B6" stroke-width="2" opacity="0.9"/>
+    <circle cx="58" cy="70" r="1.5" fill="#2EC4B6"/>
+    <circle cx="74" cy="76" r="5.5" fill="none" stroke="#2EC4B6" stroke-width="2" opacity="0.9"/>
+    <circle cx="74" cy="76" r="1.5" fill="#2EC4B6"/>
+    <!-- Measurement line (extreme spread) -->
+    <line x1="58" y1="70" x2="76" y2="64" stroke="#C03030" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.7"/>
+    <!-- Reference points (amber) -->
+    <circle cx="30" cy="30" r="5" fill="none" stroke="#C8963A" stroke-width="2"/>
+    <line x1="27" y1="30" x2="33" y2="30" stroke="#C8963A" stroke-width="1.5"/>
+    <line x1="30" y1="27" x2="30" y2="33" stroke="#C8963A" stroke-width="1.5"/>
+    <text x="36" y="27" font-size="8" fill="#C8963A" font-family="-apple-system,sans-serif" font-weight="700">R1</text>
+    <circle cx="110" cy="30" r="5" fill="none" stroke="#C8963A" stroke-width="2"/>
+    <line x1="107" y1="30" x2="113" y2="30" stroke="#C8963A" stroke-width="1.5"/>
+    <line x1="110" y1="27" x2="110" y2="33" stroke="#C8963A" stroke-width="1.5"/>
+    <text x="98" y="27" font-size="8" fill="#C8963A" font-family="-apple-system,sans-serif" font-weight="700">R2</text>
+    <line x1="35" y1="30" x2="105" y2="30" stroke="#C8963A" stroke-width="1" stroke-dasharray="3,2" opacity="0.6"/>
+    <text x="70" y="24" font-size="7" fill="#C8963A" font-family="-apple-system,sans-serif" text-anchor="middle">1.000"</text>
+  </svg>
+  <div style="font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--mut);margin-bottom:4px">Welcome to</div>
+  <div style="font-size:30px;font-weight:800;letter-spacing:0.14em;line-height:1;margin-bottom:12px">GROUP<span style="color:var(--teal)">LY</span> <span style="font-size:16px;font-weight:400;letter-spacing:0.06em;color:var(--mut)">by BORE<span style="color:var(--teal)">LY</span></span></div>
   <div style="font-size:14px;color:var(--sub);line-height:1.65;max-width:300px">Upload a target photo. Pan and zoom to align each reticle, then confirm your reference points and bullet holes.</div>
   <label class="btn" style="cursor:pointer;margin-top:8px">
     Choose Photo
@@ -427,15 +464,10 @@ function setReticle(color, label) {
   document.getElementById('reticle-v').style.background=color;
   document.getElementById('reticle-label').style.color=color;
   document.getElementById('reticle-label').textContent=label;
-  // Size impact ring to caliber if we have scale
-  const ppi = getPxPerInch();
+  // Keep reticle ring a fixed visual size — don't scale with zoom
+  // The caliber size is shown on the overlay canvas for confirmed impacts only
   const ring = document.getElementById('reticle-ring');
-  if(S.step==='impact' && ppi) {
-    const diam = S.caliberIn * ppi * S.scale * 2;
-    ring.style.width=diam+'px'; ring.style.height=diam+'px';
-  } else {
-    ring.style.width='56px'; ring.style.height='56px';
-  }
+  ring.style.width='56px'; ring.style.height='56px';
 }
 
 function addBtn(parent, label, cls, fn, opts={}) {
