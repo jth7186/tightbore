@@ -156,9 +156,11 @@ document.getElementById('file-input').addEventListener('change', e => {
     document.getElementById('upload-zone').style.display = 'none';
     vp.style.display = 'block';
     document.getElementById('panel').style.display = 'block';
-    fitPhoto();
-    resizeOverlay();
-    goStep('ref1');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      fitPhoto();
+      resizeOverlay();
+      goStep('ref1');
+    }));
   };
   photo.src = url;
 });
