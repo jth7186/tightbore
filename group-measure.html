@@ -33,8 +33,8 @@
     .reticle-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:50%;border:2px solid;animation:pulse 1.5s ease-in-out infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
     .reticle-h,.reticle-v{position:absolute;background:currentColor}
-    .reticle-h{top:50%;left:-9999px;right:-9999px;height:1.5px;transform:translateY(-50%);opacity:0.55}
-    .reticle-v{left:50%;top:-9999px;bottom:-9999px;width:1.5px;transform:translateX(-50%);opacity:0.55}
+    .reticle-h{top:50%;left:0;right:0;height:1.5px;transform:translateY(-50%)}
+    .reticle-v{left:50%;top:0;bottom:0;width:1.5px;transform:translateX(-50%)}
     .reticle-label{position:absolute;top:50%;left:50%;transform:translate(14px,-50%);font-size:13px;font-weight:700;letter-spacing:0.06em;white-space:nowrap;text-shadow:0 1px 4px #000}
 
     /* Confirmed markers drawn on overlay canvas */
@@ -613,10 +613,16 @@ function setReticle(color, label) {
   document.getElementById('reticle-v').style.background=color;
   document.getElementById('reticle-label').style.color=color;
   document.getElementById('reticle-label').textContent=label;
-  // Keep reticle ring a fixed visual size — don't scale with zoom
-  // The caliber size is shown on the overlay canvas for confirmed impacts only
+  // Fixed ring size; crosshair lines fill exactly the ring diameter
   const ring = document.getElementById('reticle-ring');
-  ring.style.width='56px'; ring.style.height='56px';
+  const ringSize = 56;
+  ring.style.width=ringSize+'px'; ring.style.height=ringSize+'px';
+  // Set crosshair lines to exactly span the ring interior
+  const rh = document.getElementById('reticle-h');
+  const rv = document.getElementById('reticle-v');
+  const ext = ringSize + 20; // 10px extension beyond ring on each side
+  rh.style.width = ext+'px'; rh.style.left = '50%'; rh.style.marginLeft = (-ext/2)+'px';
+  rv.style.height = ext+'px'; rv.style.top = '50%'; rv.style.marginTop = (-ext/2)+'px';
 }
 
 function addBtn(parent, label, cls, fn, opts={}) {
