@@ -33,8 +33,8 @@
     .reticle-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:50%;border:2px solid;animation:pulse 1.5s ease-in-out infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
     .reticle-h,.reticle-v{position:absolute;background:currentColor}
-    .reticle-h{top:50%;left:0;right:0;height:1.5px;transform:translateY(-50%)}
-    .reticle-v{left:50%;top:0;bottom:0;width:1.5px;transform:translateX(-50%)}
+    .reticle-h{top:50%;left:-9999px;right:-9999px;height:1.5px;transform:translateY(-50%);opacity:0.55}
+    .reticle-v{left:50%;top:-9999px;bottom:-9999px;width:1.5px;transform:translateX(-50%);opacity:0.55}
     .reticle-label{position:absolute;top:50%;left:50%;transform:translate(14px,-50%);font-size:13px;font-weight:700;letter-spacing:0.06em;white-space:nowrap;text-shadow:0 1px 4px #000}
 
     /* Confirmed markers drawn on overlay canvas */
@@ -57,6 +57,14 @@
     .badge-impact{background:rgba(46,196,182,.12);border:1px solid rgba(46,196,182,.3);color:var(--teal)}
     .input-sm{background:var(--bg);border:1px solid var(--bdr);border-radius:6px;color:var(--text);padding:8px 10px;font-size:14px;width:72px;text-align:center}
     select.input-sm{width:auto;min-width:130px;text-align:left}
+
+    /* Live group overlay — draggable, on canvas */
+    #group-overlay{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:8;cursor:grab;display:none;user-select:none;-webkit-user-select:none;touch-action:none}
+    #group-overlay:active{cursor:grabbing}
+    .go-box{background:rgba(12,11,10,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(240,237,232,0.18);border-radius:10px;padding:10px 16px;text-align:center;min-width:140px}
+    .go-shots{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(240,237,232,0.55);margin-bottom:4px}
+    .go-val{font-size:22px;font-weight:700;color:#F0EDE8;line-height:1;font-variant-numeric:tabular-nums}
+    .go-moa{font-size:13px;color:rgba(46,196,182,0.9);margin-top:2px;font-variant-numeric:tabular-nums}
 
     /* Results overlay */
     #results{display:none;position:absolute;bottom:0;left:0;right:0;background:rgba(12,11,10,.95);border-top:1px solid var(--bdr);padding:16px;z-index:20}
@@ -128,6 +136,15 @@
   <img id="photo" src="" alt="target" draggable="false"/>
   <canvas id="overlay-canvas"></canvas>
 
+  <!-- Live group size overlay (draggable) -->
+  <div id="group-overlay">
+    <div class="go-box">
+      <div class="go-shots" id="go-shots">0 shots</div>
+      <div class="go-val" id="go-inches">—</div>
+      <div class="go-moa" id="go-moa">— MOA</div>
+    </div>
+  </div>
+
   <!-- Fixed reticle -->
   <div id="reticle">
     <div class="reticle-ring" id="reticle-ring" style="width:56px;height:56px"></div>
@@ -193,6 +210,7 @@ document.getElementById('file-input').addEventListener('change', e => {
     document.getElementById('upload-zone').style.display = 'none';
     vp.style.display = 'block';
     document.getElementById('panel').style.display = 'block';
+    const go=document.getElementById('group-overlay'); go.style.display='none'; go.style.left=''; go.style.top=''; go.style.transform='';
     requestAnimationFrame(() => requestAnimationFrame(() => {
       fitPhoto();
       resizeOverlay();
@@ -251,9 +269,12 @@ function drawOverlay() {
     octx.fillStyle = 'rgba(200,150,58,0.2)'; octx.fill();
     octx.strokeStyle = '#C8963A'; octx.lineWidth = 2;
     octx.stroke();
+    const arm=r*2.2;
     octx.beginPath();
-    octx.moveTo(s.x-r*1.5, s.y); octx.lineTo(s.x+r*1.5, s.y);
-    octx.moveTo(s.x, s.y-r*1.5); octx.lineTo(s.x, s.y+r*1.5);
+    octx.moveTo(s.x-arm,s.y); octx.lineTo(s.x-r,s.y);
+    octx.moveTo(s.x+r,s.y);   octx.lineTo(s.x+arm,s.y);
+    octx.moveTo(s.x,s.y-arm); octx.lineTo(s.x,s.y-r);
+    octx.moveTo(s.x,s.y+r);   octx.lineTo(s.x,s.y+arm);
     octx.strokeStyle='#C8963A'; octx.lineWidth=1.5; octx.stroke();
     octx.font='bold 11px -apple-system,sans-serif';
     octx.fillStyle='#C8963A'; octx.textAlign='center';
@@ -282,6 +303,42 @@ function drawOverlay() {
     octx.fillText(i+1, s.x, s.y - calR - 4);
   });
 
+  // Live group size label
+  if(S.impacts.length>=2){
+    const ppi2=getPxPerInch();
+    if(ppi2){
+      let maxD2=0;
+      for(let i=0;i<S.impacts.length;i++)
+        for(let j=i+1;j<S.impacts.length;j++){
+          const dx=S.impacts[i].x-S.impacts[j].x,dy=S.impacts[i].y-S.impacts[j].y;
+          const d=Math.sqrt(dx*dx+dy*dy);if(d>maxD2)maxD2=d;
+        }
+      const esIn2=(maxD2/ppi2).toFixed(3);
+      const mf2=100/(S.distYards*1.047);
+      const esMOA2=(maxD2/ppi2*mf2).toFixed(2);
+      const vpW=oCanvas.width;
+      if(!S.labelPos)S.labelPos={x:vpW/2,y:54};
+      const lx=S.labelPos.x,ly=S.labelPos.y;
+      const pad=10,lh=20,boxW=120;
+      octx.save();
+      octx.shadowColor='rgba(0,0,0,0.6)';octx.shadowBlur=10;
+      octx.fillStyle='rgba(12,11,10,0.60)';
+      octx.beginPath();
+      if(octx.roundRect)octx.roundRect(lx-boxW/2,ly-pad,boxW,lh*3+pad*2,8);
+      else octx.rect(lx-boxW/2,ly-pad,boxW,lh*3+pad*2);
+      octx.fill();octx.shadowBlur=0;octx.restore();
+      octx.textAlign='center';
+      octx.font='bold 11px -apple-system,sans-serif';
+      octx.fillStyle='rgba(156,148,136,0.9)';
+      octx.fillText(`${S.impacts.length} shots`,lx,ly+lh*0.8);
+      octx.font='bold 22px -apple-system,sans-serif';
+      octx.fillStyle='rgba(240,237,232,0.95)';
+      octx.fillText(`${esIn2}"`,lx,ly+lh*0.8+lh*1.15);
+      octx.font='bold 14px -apple-system,sans-serif';
+      octx.fillStyle='rgba(46,196,182,0.9)';
+      octx.fillText(`${esMOA2} MOA`,lx,ly+lh*0.8+lh*2.3);
+    }
+  }
   // Group bounding box
   if (S.impacts.length>=2 && pxPerInch) {
     const scr = S.impacts.map(p=>imgToScreen(p.x,p.y));
@@ -294,6 +351,65 @@ function drawOverlay() {
   }
 }
 
+function updateLiveOverlay() {
+  const overlay = document.getElementById('group-overlay');
+  const ppi = getPxPerInch();
+  if (!ppi || S.impacts.length < 2) { overlay.style.display='none'; return; }
+  overlay.style.display = 'block';
+
+  // Compute ES
+  let maxD=0;
+  for(let i=0;i<S.impacts.length;i++)
+    for(let j=i+1;j<S.impacts.length;j++){
+      const dx=S.impacts[i].x-S.impacts[j].x, dy=S.impacts[i].y-S.impacts[j].y;
+      const d=Math.sqrt(dx*dx+dy*dy);
+      if(d>maxD) maxD=d;
+    }
+  const esIn = maxD/ppi;
+  const yards = S.distYards||100;
+  const esMOA = esIn * 100/(yards*1.047);
+
+  document.getElementById('go-shots').textContent = S.impacts.length+' shot'+(S.impacts.length!==1?'s':'');
+  document.getElementById('go-inches').textContent = esIn.toFixed(3)+'"';
+  document.getElementById('go-moa').textContent = esMOA.toFixed(2)+' MOA';
+}
+
+// Draggable overlay
+(function(){
+  const el = document.getElementById('group-overlay');
+  let dragging=false, startX=0, startY=0, origLeft=0, origTop=0;
+  el.addEventListener('mousedown', e=>{
+    dragging=true;
+    const r=el.getBoundingClientRect(), pr=vp.getBoundingClientRect();
+    origLeft=r.left-pr.left; origTop=r.top-pr.top;
+    startX=e.clientX; startY=e.clientY;
+    el.style.transform='none';
+    el.style.left=origLeft+'px'; el.style.top=origTop+'px';
+    e.stopPropagation();
+  });
+  window.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    el.style.left=(origLeft+e.clientX-startX)+'px';
+    el.style.top=(origTop+e.clientY-startY)+'px';
+  });
+  window.addEventListener('mouseup', ()=>dragging=false);
+  el.addEventListener('touchstart', e=>{
+    dragging=true;
+    const r=el.getBoundingClientRect(), pr=vp.getBoundingClientRect();
+    origLeft=r.left-pr.left; origTop=r.top-pr.top;
+    startX=e.touches[0].clientX; startY=e.touches[0].clientY;
+    el.style.transform='none';
+    el.style.left=origLeft+'px'; el.style.top=origTop+'px';
+    e.stopPropagation();
+  },{passive:true});
+  window.addEventListener('touchmove', e=>{
+    if(!dragging) return;
+    el.style.left=(origLeft+e.touches[0].clientX-startX)+'px';
+    el.style.top=(origTop+e.touches[0].clientY-startY)+'px';
+  },{passive:true});
+  window.addEventListener('touchend', ()=>dragging=false);
+})();
+
 function getPxPerInch() {
   if (S.refs.length<2) return null;
   const dx=(S.refs[1].x-S.refs[0].x), dy=(S.refs[1].y-S.refs[0].y);
@@ -301,16 +417,34 @@ function getPxPerInch() {
 }
 
 // ── Pan / pinch ───────────────────────────────────────────────────────────
+function isOnLabel(cx,cy){
+  if(!S.labelPos||S.impacts.length<2)return false;
+  const boxW=120,pad=10,lh=20;
+  const lx=S.labelPos.x,ly=S.labelPos.y;
+  return cx>=lx-boxW/2&&cx<=lx+boxW/2&&cy>=ly-pad&&cy<=ly+lh*3+pad*2;
+}
 vp.addEventListener('mousedown', e=>{
-  S.panStart={cx:e.clientX,cy:e.clientY,tx:S.tx,ty:S.ty};
+  const r=vp.getBoundingClientRect();
+  const cx=e.clientX-r.left,cy=e.clientY-r.top;
+  if(isOnLabel(cx,cy)){
+    S.labelDrag={sx:cx,sy:cy,lx:S.labelPos.x,ly:S.labelPos.y};
+  } else {
+    S.panStart={cx:e.clientX,cy:e.clientY,tx:S.tx,ty:S.ty};
+  }
 });
 window.addEventListener('mousemove', e=>{
-  if(!S.panStart) return;
+  if(S.labelDrag){
+    const r=vp.getBoundingClientRect();
+    const cx=e.clientX-r.left,cy=e.clientY-r.top;
+    S.labelPos={x:S.labelDrag.lx+(cx-S.labelDrag.sx),y:S.labelDrag.ly+(cy-S.labelDrag.sy)};
+    drawOverlay();return;
+  }
+  if(!S.panStart)return;
   S.tx=S.panStart.tx+(e.clientX-S.panStart.cx);
   S.ty=S.panStart.ty+(e.clientY-S.panStart.cy);
   applyTransform();
 });
-window.addEventListener('mouseup', ()=>S.panStart=null);
+window.addEventListener('mouseup',()=>{S.panStart=null;S.labelDrag=null;});
 
 vp.addEventListener('wheel', e=>{
   e.preventDefault();
@@ -325,6 +459,14 @@ vp.addEventListener('wheel', e=>{
 
 vp.addEventListener('touchstart', e=>{
   e.preventDefault();
+  if(e.touches.length===1){
+    const r=vp.getBoundingClientRect();
+    const cx=e.touches[0].clientX-r.left,cy=e.touches[0].clientY-r.top;
+    if(isOnLabel(cx,cy)){
+      S.labelDrag={sx:cx,sy:cy,lx:S.labelPos?S.labelPos.x:oCanvas.width/2,ly:S.labelPos?S.labelPos.y:54};
+      return;
+    }
+  }
   if(e.touches.length===2){
     S.pinch={dist:tDist(e.touches),scale:S.scale,tx:S.tx,ty:S.ty,
       cx:(e.touches[0].clientX+e.touches[1].clientX)/2,
@@ -339,6 +481,12 @@ vp.addEventListener('touchstart', e=>{
 
 vp.addEventListener('touchmove', e=>{
   e.preventDefault();
+  if(S.labelDrag&&e.touches.length===1){
+    const r=vp.getBoundingClientRect();
+    const cx=e.touches[0].clientX-r.left,cy=e.touches[0].clientY-r.top;
+    S.labelPos={x:S.labelDrag.lx+(cx-S.labelDrag.sx),y:S.labelDrag.ly+(cy-S.labelDrag.sy)};
+    drawOverlay();return;
+  }
   if(e.touches.length===2 && S.pinch){
     const nd=tDist(e.touches);
     const ns=Math.min(S.maxScale,Math.max(S.minScale,S.pinch.scale*(nd/S.pinch.dist)));
@@ -355,7 +503,7 @@ vp.addEventListener('touchmove', e=>{
   }
 },{passive:false});
 
-vp.addEventListener('touchend', ()=>{S.panStart=null; S.pinch=null;},{passive:true});
+vp.addEventListener('touchend', ()=>{S.panStart=null;S.pinch=null;S.labelDrag=null;},{passive:true});
 
 function tDist(t){const dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;return Math.sqrt(dx*dx+dy*dy);}
 
@@ -445,10 +593,11 @@ function goStep(step) {
     addBtn(actions, 'Mark Impact', 'btn-sm', ()=>{
       S.impacts.push(reticleToImg());
       drawOverlay();
+      updateLiveOverlay();
       goStep('impact');
     }, {style:'background:var(--teal);color:#0C0B0A'});
     if(n>=2) addBtn(actions, 'Calculate →', 'btn-sm', calculate);
-    if(n>0)  addBtn(actions, 'Undo Last', 'btn-ghost btn-sm', ()=>{S.impacts.pop();drawOverlay();goStep('impact');});
+    if(n>0)  addBtn(actions, 'Undo Last', 'btn-ghost btn-sm', ()=>{S.impacts.pop();drawOverlay();updateLiveOverlay();goStep('impact');});
     addBtn(actions, 'New Photo', 'btn-ghost btn-sm', reset);
 
   } else if (step === 'done') {
@@ -559,16 +708,20 @@ document.getElementById('copy-btn').addEventListener('click', ()=>{
 function reset() {
   S.refs=[]; S.impacts=[]; S.scale=1; S.tx=0; S.ty=0;
   document.getElementById('results').style.display='none';
+  document.getElementById('group-overlay').style.display='none';
   document.getElementById('viewport').style.display='none';
   document.getElementById('panel').style.display='none';
   document.getElementById('upload-zone').style.display='flex';
   document.getElementById('file-input').value='';
   document.getElementById('step-pill').textContent='Upload';
+  S.labelPos=null;
   reticle.style.display='none';
 }
 
 // Initial yards
 S.distYards=100;
+S.labelPos=null;
+S.labelDrag=null;
 
 // Redraw on pan so overlay tracks
 const origApply=applyTransform;
