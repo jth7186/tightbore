@@ -168,7 +168,7 @@ function LineChart({data,xKey,yKey,color,yFmt,bdr,mut,mono}){
 }
 
 // ─── EventCard — outside App ──────────────────────────────────────────────────
-function EventCard({ev,baseline,onDel,onEdit,readOnly,T,calibers,loads,setLoads,onMeasureGroup,onPhotoTap}){
+function EventCard({ev,baseline,onDel,onEdit,readOnly,T,calibers,loads,setLoads,onMeasureGroup}){
   const[open,setOpen]=useState(false);
   const del=e=>{e.stopPropagation();onDel();};
   if(ev.type==="session"){
@@ -212,8 +212,8 @@ function EventCard({ev,baseline,onDel,onEdit,readOnly,T,calibers,loads,setLoads,
           {ev.photo&&(
             <div style={{marginTop:10,marginBottom:4}}>
               <img src={ev.photo} style={{width:"100%",maxHeight:260,objectFit:"cover",borderRadius:8,display:"block",cursor:"pointer"}} alt="Group photo"
-                onClick={e=>{e.stopPropagation();onPhotoTap?onPhotoTap(ev.photo):null;}}/>
-              <div style={{fontSize:10,color:T.mut,marginTop:4,textAlign:"center",letterSpacing:"0.06em",textTransform:"uppercase"}}>Tap to view · share</div>
+                onClick={e=>{e.stopPropagation();window.open(ev.photo,"_blank");}}/>
+              <div style={{fontSize:10,color:T.mut,marginTop:4,textAlign:"center",letterSpacing:"0.06em",textTransform:"uppercase"}}>Tap to view full size</div>
             </div>
           )}
           {!readOnly&&onMeasureGroup&&(
@@ -715,8 +715,6 @@ function App(){
   // ── GroupLY modal ──────────────────────────────────────────────────────────
   const[groupLYOpen,setGroupLYOpen]=useState(false);
   const groupLYCb=useRef(null); // callback(result) when GroupLY posts back
-  // ── Photo lightbox ─────────────────────────────────────────────────────────
-  const[photoLightbox,setPhotoLightbox]=useState(null); // base64 dataUrl or null
   const[fTgt,  setFTgt]  =useState(null);const[evType,setEvType]=useState("session");
   // clean
   const[cDate, setCDate] =useState(toLocalDate());const[cQuick,setCQuick]=useState(true);
@@ -797,26 +795,6 @@ function App(){
     const isaC=15-(altFt*0.001981);
     return Math.round(altFt+120*(oatC-isaC));
   };
-  // ── Share / export a photo dataUrl via Web Share API or fallback anchor ───
-  const sharePhoto=(dataUrl)=>{
-    if(!dataUrl)return;
-    const filename=`grouply-${Date.now()}.jpg`;
-    fetch(dataUrl).then(r=>r.blob()).then(blob=>{
-      const file=new File([blob],filename,{type:blob.type||"image/jpeg"});
-      if(navigator.canShare&&navigator.canShare({files:[file]})){
-        navigator.share({files:[file],title:"GroupLY Result"}).catch(()=>{});
-      } else {
-        // Fallback: download link
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement("a");
-        a.href=url;a.download=filename;
-        document.body.appendChild(a);a.click();
-        document.body.removeChild(a);
-        setTimeout(()=>URL.revokeObjectURL(url),1000);
-      }
-    });
-  };
-
   const fetchWeather=async()=>{
     setWxLoading(true);setWxErr("");
     try{
@@ -1074,14 +1052,13 @@ function App(){
           setFGrp(r.esIn.toFixed(3));
           if(r.photo)setFPhoto(r.photo);
           if(r.yards&&!fGrpD)setFGrpD(String(r.yards));
-          if(r.photo)setPhotoLightbox(r.photo);
         };
         setGroupLYOpen(true);
       }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:T.accBg,border:`1px solid ${T.accBdr}`,borderRadius:6,padding:"10px 14px",fontSize:12,color:T.acc,cursor:"pointer",fontWeight:500,marginBottom:14}}>
         <Ic.Target/>📐 Measure Group with GroupLY
       </button>
       {fPhoto&&(<div style={{marginBottom:14,position:"relative"}}>
-        <img src={fPhoto} onClick={()=>setPhotoLightbox(fPhoto)} style={{width:"100%",maxHeight:180,objectFit:"cover",borderRadius:8,display:"block",cursor:"pointer"}} alt="GroupLY result"/>
+        <img src={fPhoto} style={{width:"100%",maxHeight:180,objectFit:"cover",borderRadius:8,display:"block"}} alt="GroupLY result"/>
         <button onClick={()=>setFPhoto(null)} style={{position:"absolute",top:6,right:6,background:"rgba(10,9,8,.7)",border:"none",borderRadius:50,width:28,height:28,color:"#fff",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,lineHeight:1}}>×</button>
       </div>)}
       {divider}{secH("Conditions")}
@@ -1447,7 +1424,7 @@ function App(){
             </div>
             {allEvts.length===0
               ?<div style={{padding:"52px 24px",textAlign:"center",fontSize:11,textTransform:"uppercase",letterSpacing:"0.1em",color:T.mut}}>No events yet</div>
-              :<div style={{padding:"0 16px"}}>{allEvts.map(ev=><EventCard key={ev.id} ev={ev} baseline={baseCbto} onDel={()=>delEvent(ev.id)} onEdit={!isT?openEditSession:null} readOnly={isT} T={T} calibers={calibers} loads={loads} setLoads={setLoads} onPhotoTap={p=>setPhotoLightbox(p)} onMeasureGroup={!isT&&ev.type==="session"?()=>{groupLYCb.current=(r)=>{setEvents(p=>p.map(x=>x.id===ev.id?{...x,groupSize:parseFloat(r.esIn.toFixed(4)),groupDistance:r.yards||x.groupDistance,photo:r.photo||x.photo,modifiedAt:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}:x));if(r.photo)setPhotoLightbox(r.photo);};setGroupLYOpen(true);}:null}/>)}</div>
+              :<div style={{padding:"0 16px"}}>{allEvts.map(ev=><EventCard key={ev.id} ev={ev} baseline={baseCbto} onDel={()=>delEvent(ev.id)} onEdit={!isT?openEditSession:null} readOnly={isT} T={T} calibers={calibers} loads={loads} setLoads={setLoads} onMeasureGroup={!isT&&ev.type==="session"?()=>{groupLYCb.current=(r)=>{setEvents(p=>p.map(x=>x.id===ev.id?{...x,groupSize:parseFloat(r.esIn.toFixed(4)),groupDistance:r.yards||x.groupDistance,photo:r.photo||x.photo,modifiedAt:new Date().toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"})}:x));};setGroupLYOpen(true);}:null}/>)}</div>
             }
           </>}
           {tab==="lands"&&<>
@@ -2137,23 +2114,6 @@ function App(){
           </div>
         );
       })()}
-
-      {/* ── Photo lightbox ── */}
-      {photoLightbox&&(
-        <div onClick={()=>setPhotoLightbox(null)} style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,0.92)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:16}}>
-          <img src={photoLightbox} onClick={e=>e.stopPropagation()} style={{maxWidth:"100%",maxHeight:"76vh",borderRadius:8,objectFit:"contain",display:"block"}} alt="Group photo"/>
-          <div onClick={e=>e.stopPropagation()} style={{display:"flex",gap:10,marginTop:16,flexWrap:"wrap",justifyContent:"center"}}>
-            <button onClick={()=>sharePhoto(photoLightbox)} style={{background:"#2EC4B6",color:"#0C0B0A",border:"none",borderRadius:8,padding:"11px 22px",fontSize:14,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-              Share / Save
-            </button>
-            <button onClick={()=>setPhotoLightbox(null)} style={{background:"transparent",border:"1px solid rgba(240,237,232,0.25)",color:"rgba(240,237,232,0.7)",borderRadius:8,padding:"11px 22px",fontSize:14,cursor:"pointer"}}>
-              Close
-            </button>
-          </div>
-          <div style={{fontSize:11,color:"rgba(240,237,232,0.35)",marginTop:10,letterSpacing:"0.06em"}}>Tap outside to close</div>
-        </div>
-      )}
 
       {/* ── GroupLY full-screen modal ── */}
       {groupLYOpen&&(
