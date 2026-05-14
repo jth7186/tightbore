@@ -189,6 +189,11 @@
   </div>
   <div class="res-detail" id="r-detail"></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <!-- Shown only when running inside Borely modal -->
+    <button class="btn btn-sm btn-teal" id="save-to-borely-btn" style="display:none;font-weight:700">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Save to Session
+    </button>
     <button class="btn btn-sm btn-export" id="export-btn">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Save Image
@@ -203,6 +208,10 @@
 <div id="export-toast">Image saved!</div>
 
 <script>
+// ── Borely integration ────────────────────────────────────────────────────
+// Detects when running inside the Borely app as a full-screen modal iframe
+const IN_BORELY = window.self !== window.top;
+
 // ── State ─────────────────────────────────────────────────────────────────
 const S = {
   tx: 0, ty: 0, scale: 1, minScale: 0.2, maxScale: 12,
@@ -680,37 +689,53 @@ function drawBorelyLogo(ctx, x, y, height) {
 
 function exportImage() {
   if (!photo.naturalWidth || S.impacts.length < 2 || !S.lastCalc) return;
+  buildExportCanvas(dataUrl => {
+    const { esIn, esMOA, yards } = S.lastCalc;
+    const nShots = S.impacts.length;
+    fetch(dataUrl).then(r => r.blob()).then(blob => {
+      const file = new File([blob], `grouply-${Date.now()}.png`, { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: 'GroupLY Result',
+          text: `${esIn.toFixed(3)}" / ${esMOA.toFixed(2)} MOA · ${nShots} shots · ${yards}yds`
+        }).then(() => showToast('Image shared!'))
+          .catch(err => { if (err.name !== 'AbortError') fallbackDownload(blob); });
+      } else {
+        fallbackDownload(blob);
+      }
+    });
+  });
+}
 
-  const iw = photo.naturalWidth;
-  const ih = photo.naturalHeight;
+// ── Build export canvas (used by both exportImage and saveToBorely) ───────
+// Draws photo + annotations + branded banner; calls callback(dataUrl: string)
+function buildExportCanvas(callback) {
+  if (!photo.naturalWidth || S.impacts.length < 2 || !S.lastCalc) return;
+  const iw = photo.naturalWidth, ih = photo.naturalHeight;
   const ppi = S.lastCalc.ppi;
   const calR = (S.caliberIn / 2) * ppi;
-
-  // Create export canvas at native photo resolution
   const ec = document.createElement('canvas');
-  ec.width = iw;
-  ec.height = ih;
+  ec.width = iw; ec.height = ih;
   const ex = ec.getContext('2d');
 
-  // 1. Draw original photo
+  // 1. Photo
   ex.drawImage(photo, 0, 0, iw, ih);
 
-  // 2. Draw impact circles at native scale
+  // 2. Impact circles
   S.impacts.forEach((pt, i) => {
     ex.beginPath(); ex.arc(pt.x, pt.y, calR, 0, Math.PI * 2);
     ex.fillStyle = 'rgba(46,196,182,0.18)'; ex.fill();
-    ex.strokeStyle = '#2EC4B6'; ex.lineWidth = Math.max(3, iw / 600);
-    ex.stroke();
+    ex.strokeStyle = '#2EC4B6'; ex.lineWidth = Math.max(3, iw / 600); ex.stroke();
     ex.beginPath(); ex.arc(pt.x, pt.y, Math.max(4, iw / 500), 0, Math.PI * 2);
     ex.fillStyle = '#2EC4B6'; ex.fill();
-    // Number label
     const labelSize = Math.max(16, iw / 120);
     ex.font = `bold ${labelSize}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
     ex.fillStyle = '#2EC4B6'; ex.textAlign = 'center';
     ex.fillText(i + 1, pt.x, pt.y - calR - labelSize * 0.4);
   });
 
-  // 3. Draw ES connecting line
+  // 3. ES line
   const fp = S.lastCalc.fp;
   const pa = S.impacts[fp[0]], pb = S.impacts[fp[1]];
   ex.beginPath(); ex.moveTo(pa.x, pa.y); ex.lineTo(pb.x, pb.y);
@@ -718,118 +743,52 @@ function exportImage() {
   ex.setLineDash([Math.max(8, iw / 200), Math.max(4, iw / 400)]);
   ex.stroke(); ex.setLineDash([]);
 
-  // 4. Draw group bounding box
+  // 4. Bounding box
   const xs = S.impacts.map(p => p.x), ys = S.impacts.map(p => p.y);
-  const bx0 = Math.min(...xs) - calR, by0 = Math.min(...ys) - calR;
-  const bx1 = Math.max(...xs) + calR, by1 = Math.max(...ys) + calR;
-  ex.strokeStyle = 'rgba(106,138,90,0.5)'; ex.lineWidth = Math.max(2, iw / 800);
-  ex.setLineDash([Math.max(6, iw / 250), Math.max(5, iw / 300)]);
-  ex.strokeRect(bx0, by0, bx1 - bx0, by1 - by0);
-  ex.setLineDash([]);
+  const bx0=Math.min(...xs)-calR, by0=Math.min(...ys)-calR;
+  const bx1=Math.max(...xs)+calR, by1=Math.max(...ys)+calR;
+  ex.strokeStyle='rgba(106,138,90,0.5)'; ex.lineWidth=Math.max(2,iw/800);
+  ex.setLineDash([Math.max(6,iw/250),Math.max(5,iw/300)]);
+  ex.strokeRect(bx0,by0,bx1-bx0,by1-by0); ex.setLineDash([]);
 
-  // 5. Draw branded results banner at bottom
-  const bannerH = Math.max(100, ih * 0.1);
-  const bannerY = ih - bannerH;
-  const pad = bannerH * 0.15;
-  const fontSize = bannerH * 0.22;
-  const smallFont = bannerH * 0.15;
-
-  // Banner background
-  ex.fillStyle = 'rgba(12,11,10,0.82)';
-  ex.fillRect(0, bannerY, iw, bannerH);
-  // Top border line
-  ex.fillStyle = 'rgba(56,52,44,0.8)';
-  ex.fillRect(0, bannerY, iw, 2);
-  // Accent stripe
-  ex.fillStyle = '#2EC4B6';
-  ex.fillRect(0, bannerY, iw, Math.max(3, bannerH * 0.03));
-
-  // Left side: Borely logo
-  const logoH = bannerH * 0.55;
-  const logoFontSize = logoH * 0.42;
-  const logoY = bannerY + bannerH / 2;
-
+  // 5. Branded banner
+  const bannerH=Math.max(100,ih*0.1), bannerY=ih-bannerH;
+  const pad=bannerH*0.15, fontSize=bannerH*0.22, smallFont=bannerH*0.15;
+  ex.fillStyle='rgba(12,11,10,0.82)'; ex.fillRect(0,bannerY,iw,bannerH);
+  ex.fillStyle='rgba(56,52,44,0.8)'; ex.fillRect(0,bannerY,iw,2);
+  ex.fillStyle='#2EC4B6'; ex.fillRect(0,bannerY,iw,Math.max(3,bannerH*0.03));
+  const logoFontSize=bannerH*0.55*0.42, logoY=bannerY+bannerH/2, logoX=pad*1.5;
   ex.save();
-  ex.font = `800 ${logoFontSize}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.textAlign = 'left';
-  ex.textBaseline = 'middle';
-
-  const logoX = pad * 1.5;
-
-  // "BORE" in white
-  ex.fillStyle = '#F0EDE8';
-  ex.fillText('BORE', logoX, logoY - logoFontSize * 0.35);
-  const boreW = ex.measureText('BORE').width;
-  // "LY" in teal
-  ex.fillStyle = '#2EC4B6';
-  ex.fillText('LY', logoX + boreW, logoY - logoFontSize * 0.35);
-
-  // "GroupLY" subtitle below
-  const subSize = logoFontSize * 0.45;
-  ex.font = `600 ${subSize}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.fillStyle = 'rgba(156,148,136,0.9)';
-  ex.fillText('GroupLY', logoX, logoY + logoFontSize * 0.45);
+  ex.font=`800 ${logoFontSize}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
+  ex.textAlign='left'; ex.textBaseline='middle';
+  ex.fillStyle='#F0EDE8'; ex.fillText('BORE',logoX,logoY-logoFontSize*0.35);
+  const boreW=ex.measureText('BORE').width;
+  ex.fillStyle='#2EC4B6'; ex.fillText('LY',logoX+boreW,logoY-logoFontSize*0.35);
+  ex.font=`600 ${logoFontSize*0.45}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
+  ex.fillStyle='rgba(156,148,136,0.9)'; ex.fillText('GroupLY',logoX,logoY+logoFontSize*0.45);
   ex.restore();
-
-  // Right side: measurement results
   const { esIn, esMOA, mrIn, mrMOA, yards } = S.lastCalc;
-  const nShots = S.impacts.length;
-
-  // Primary: ES value large
-  ex.textAlign = 'right';
-  const rX = iw - pad * 1.5;
-
-  ex.font = `bold ${fontSize * 1.1}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.fillStyle = '#F0EDE8';
-  ex.fillText(`${esIn.toFixed(3)}"`, rX, bannerY + pad + fontSize * 0.9);
-
-  // MOA value in teal
-  ex.font = `bold ${fontSize * 0.85}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.fillStyle = '#2EC4B6';
-  const moaText = `${esMOA.toFixed(2)} MOA`;
-  const moaW = ex.measureText(moaText).width;
-  ex.fillText(moaText, rX, bannerY + pad + fontSize * 1.9);
-
-  // Detail line
-  ex.font = `${smallFont}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.fillStyle = 'rgba(156,148,136,0.9)';
-  ex.fillText(`${nShots} shots · ${yards} yds · MR: ${mrIn.toFixed(3)}" / ${mrMOA.toFixed(2)} MOA`, rX, bannerY + bannerH - pad * 1.1);
-
-  // Center: optional crosshair icon decoration
-  const ctrX = iw / 2;
-  const ctrY = bannerY + bannerH / 2;
-  const iconR = bannerH * 0.18;
-  ex.strokeStyle = 'rgba(106,138,90,0.35)';
-  ex.lineWidth = Math.max(2, bannerH * 0.02);
-  ex.beginPath(); ex.arc(ctrX, ctrY, iconR, 0, Math.PI * 2); ex.stroke();
-  const armLen = iconR * 1.4;
+  const nShots=S.impacts.length, rX=iw-pad*1.5;
+  ex.textAlign='right';
+  ex.font=`bold ${fontSize*1.1}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
+  ex.fillStyle='#F0EDE8'; ex.fillText(`${esIn.toFixed(3)}"`,rX,bannerY+pad+fontSize*0.9);
+  ex.font=`bold ${fontSize*0.85}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
+  ex.fillStyle='#2EC4B6'; ex.fillText(`${esMOA.toFixed(2)} MOA`,rX,bannerY+pad+fontSize*1.9);
+  ex.font=`${smallFont}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
+  ex.fillStyle='rgba(156,148,136,0.9)';
+  ex.fillText(`${nShots} shots · ${yards} yds · MR: ${mrIn.toFixed(3)}" / ${mrMOA.toFixed(2)} MOA`,rX,bannerY+bannerH-pad*1.1);
+  const ctrX=iw/2, ctrY=bannerY+bannerH/2, iconR=bannerH*0.18;
+  ex.strokeStyle='rgba(106,138,90,0.35)'; ex.lineWidth=Math.max(2,bannerH*0.02);
+  ex.beginPath(); ex.arc(ctrX,ctrY,iconR,0,Math.PI*2); ex.stroke();
+  const armLen=iconR*1.4;
   ex.beginPath();
-  ex.moveTo(ctrX - armLen, ctrY); ex.lineTo(ctrX - iconR * 0.3, ctrY);
-  ex.moveTo(ctrX + iconR * 0.3, ctrY); ex.lineTo(ctrX + armLen, ctrY);
-  ex.moveTo(ctrX, ctrY - armLen); ex.lineTo(ctrX, ctrY - iconR * 0.3);
-  ex.moveTo(ctrX, ctrY + iconR * 0.3); ex.lineTo(ctrX, ctrY + armLen);
+  ex.moveTo(ctrX-armLen,ctrY); ex.lineTo(ctrX-iconR*0.3,ctrY);
+  ex.moveTo(ctrX+iconR*0.3,ctrY); ex.lineTo(ctrX+armLen,ctrY);
+  ex.moveTo(ctrX,ctrY-armLen); ex.lineTo(ctrX,ctrY-iconR*0.3);
+  ex.moveTo(ctrX,ctrY+iconR*0.3); ex.lineTo(ctrX,ctrY+armLen);
   ex.stroke();
 
-  // 6. Export
-  ec.toBlob(blob => {
-    if (!blob) return;
-    const file = new File([blob], `grouply-${Date.now()}.png`, { type: 'image/png' });
-
-    // Try Web Share API first (mobile → save to photos)
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({
-        files: [file],
-        title: 'GroupLY Result',
-        text: `${esIn.toFixed(3)}" / ${esMOA.toFixed(2)} MOA · ${nShots} shots · ${yards}yds`
-      }).then(() => {
-        showToast('Image shared!');
-      }).catch(err => {
-        if (err.name !== 'AbortError') fallbackDownload(blob);
-      });
-    } else {
-      fallbackDownload(blob);
-    }
-  }, 'image/png', 1.0);
+  callback(ec.toDataURL('image/jpeg', 0.88));
 }
 
 function fallbackDownload(blob) {
@@ -869,7 +828,111 @@ function reset() {
 S.distYards=100;
 S.lastCalc=null;
 
-const origApply=applyTransform;
+// ── Borely iframe init ─────────────────────────────────────────────────────
+if (IN_BORELY) {
+  // Show the "Save to Session" button
+  document.getElementById('save-to-borely-btn').style.display = 'inline-flex';
+  document.getElementById('save-to-borely-btn').style.alignItems = 'center';
+
+  // Hide the "Upload" step pill — not relevant in Borely flow
+  document.getElementById('step-pill').style.display = 'none';
+
+  // Add a close/cancel button to the header
+  const hdr = document.querySelector('header');
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = '✕ Cancel';
+  closeBtn.style.cssText = 'background:transparent;border:1px solid rgba(240,237,232,0.25);color:rgba(240,237,232,0.6);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;letter-spacing:0.04em';
+  closeBtn.addEventListener('click', () => {
+    window.parent.postMessage({ type: 'grouply_cancel' }, '*');
+  });
+  hdr.appendChild(closeBtn);
+
+  // Replace the welcome screen with a minimal photo picker
+  const zone = document.getElementById('upload-zone');
+  zone.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;gap:18px;padding:32px 24px;text-align:center;width:100%">
+      <svg width="88" height="88" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer rings -->
+        <circle cx="50" cy="50" r="46" fill="none" stroke="#38342C" stroke-width="1.5"/>
+        <circle cx="50" cy="50" r="36" fill="none" stroke="#38342C" stroke-width="1.5"/>
+        <circle cx="50" cy="50" r="26" fill="none" stroke="rgba(46,196,182,0.4)" stroke-width="1.5"/>
+        <circle cx="50" cy="50" r="16" fill="none" stroke="rgba(46,196,182,0.6)" stroke-width="2"/>
+        <!-- Bull -->
+        <circle cx="50" cy="50" r="7" fill="#C03030" opacity="0.85"/>
+        <!-- Crosshair arms -->
+        <line x1="50" y1="2"  x2="50" y2="32" stroke="rgba(240,237,232,0.55)" stroke-width="2" stroke-linecap="round"/>
+        <line x1="50" y1="68" x2="50" y2="98" stroke="rgba(240,237,232,0.55)" stroke-width="2" stroke-linecap="round"/>
+        <line x1="2"  y1="50" x2="32" y2="50" stroke="rgba(240,237,232,0.55)" stroke-width="2" stroke-linecap="round"/>
+        <line x1="68" y1="50" x2="98" y2="50" stroke="rgba(240,237,232,0.55)" stroke-width="2" stroke-linecap="round"/>
+        <!-- Sample impact dots with teal rings -->
+        <circle cx="44" cy="46" r="4.5" fill="none" stroke="#2EC4B6" stroke-width="1.8" opacity="0.9"/>
+        <circle cx="44" cy="46" r="1.2" fill="#2EC4B6"/>
+        <circle cx="56" cy="52" r="4.5" fill="none" stroke="#2EC4B6" stroke-width="1.8" opacity="0.9"/>
+        <circle cx="56" cy="52" r="1.2" fill="#2EC4B6"/>
+        <circle cx="50" cy="57" r="4.5" fill="none" stroke="#2EC4B6" stroke-width="1.8" opacity="0.9"/>
+        <circle cx="50" cy="57" r="1.2" fill="#2EC4B6"/>
+        <!-- ES line between farthest impacts -->
+        <line x1="44" y1="46" x2="56" y2="52" stroke="#C03030" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.7"/>
+      </svg>
+      <div style="font-size:13px;color:rgba(156,148,136,0.85);line-height:1.65;max-width:270px">Pan and zoom to place reference points and mark impacts on the photograph of your target.</div>
+      <label style="display:flex;align-items:center;justify-content:center;gap:8px;background:#2EC4B6;color:#0C0B0A;border:none;border-radius:8px;padding:14px 28px;font-size:15px;font-weight:700;cursor:pointer;width:100%;max-width:280px;letter-spacing:0.04em">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Take or Choose Photo
+        <input type="file" accept="image/*" id="file-input-borely" style="display:none"/>
+      </label>
+      <div style="font-size:11px;color:rgba(92,88,80,0.85);line-height:1.6;max-width:270px;letter-spacing:0.01em">Tip: Feature works best when photograph is taken 4–12" from target, with the camera parallel to the target surface.</div>
+    </div>
+  `;
+
+  // Wire the new file input to the same handler as the original
+  document.getElementById('file-input-borely').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    photo.onload = () => {
+      zone.style.display = 'none';
+      vp.style.display = 'block';
+      document.getElementById('panel').style.display = 'block';
+      const go = document.getElementById('group-overlay');
+      go.style.display = 'none'; go.style.left = ''; go.style.top = ''; go.style.transform = '';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        fitPhoto();
+        resizeOverlay();
+        goStep('ref1');
+      }));
+    };
+    photo.src = url;
+  });
+}
+
+// ── Save to Borely ─────────────────────────────────────────────────────────
+document.getElementById('save-to-borely-btn').addEventListener('click', saveToBorely);
+
+function saveToBorely() {
+  if (!S.lastCalc) return;
+  const btn = document.getElementById('save-to-borely-btn');
+  btn.textContent = 'Rendering…';
+  btn.disabled = true;
+
+  // Build the export canvas (same pipeline as exportImage)
+  buildExportCanvas(dataUrl => {
+    const { esIn, esMOA, mrIn, mrMOA, yards } = S.lastCalc;
+    const nShots = S.impacts.length;
+    window.parent.postMessage({
+      type: 'grouply_result',
+      esIn: parseFloat(esIn.toFixed(4)),
+      esMOA: parseFloat(esMOA.toFixed(3)),
+      mrIn: parseFloat(mrIn.toFixed(4)),
+      mrMOA: parseFloat(mrMOA.toFixed(3)),
+      yards,
+      nShots,
+      photo: dataUrl,
+    }, '*');
+    // Button feedback while parent closes modal
+    btn.textContent = '✓ Saved!';
+  });
+}
+
 </script>
 </body>
 </html>
