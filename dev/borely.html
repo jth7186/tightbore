@@ -219,7 +219,7 @@ function EventCard({ev,baseline,onDel,onEdit,readOnly,T,calibers,loads,setLoads,
           {!readOnly&&onMeasureGroup&&(
             <div style={{paddingTop:8,borderTop:`1px solid ${T.bdr2}`}}>
               <button onClick={e=>{e.stopPropagation();onMeasureGroup();}} style={{display:"flex",alignItems:"center",gap:6,background:T.accBg,border:`1px solid ${T.accBdr}`,borderRadius:6,padding:"8px 12px",fontSize:12,color:T.acc,cursor:"pointer",fontWeight:500,width:"100%",justifyContent:"center"}}>
-                <Ic.Target/>{ev.photo?"Re-measure Group":"📐 Measure Group with GroupLY"}
+                <Ic.Target/>{ev.photo?"Re-measure Group":"Measure Your Group, Powered by GroupLY"}
               </button>
             </div>
           )}
@@ -1088,7 +1088,7 @@ function App(){
         };
         setGroupLYOpen(true);
       }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:"100%",background:T.accBg,border:`1px solid ${T.accBdr}`,borderRadius:6,padding:"10px 14px",fontSize:12,color:T.acc,cursor:"pointer",fontWeight:500,marginBottom:14}}>
-        <Ic.Target/>📐 Measure Group with GroupLY
+        Measure Your Group, Powered by GroupLY
       </button>
       {fPhoto&&(<div style={{marginBottom:14,position:"relative"}}>
         <img src={fPhoto} onClick={()=>setPhotoLightbox(fPhoto)} style={{width:"100%",maxHeight:180,objectFit:"cover",borderRadius:8,display:"block",cursor:"pointer"}} alt="GroupLY result"/>
@@ -1096,7 +1096,7 @@ function App(){
       </div>)}
       {divider}{secH("Conditions")}
       <button onClick={fetchWeather} disabled={wxLoading} style={{width:"100%",background:T.accBg,border:`1px solid ${T.accBdr}`,borderRadius:6,padding:"10px 14px",fontSize:12,color:T.acc,cursor:"pointer",fontWeight:500,marginBottom:10,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-        {wxLoading?"Fetching conditions…":"📡 Get Current Conditions"}
+        {wxLoading?"Fetching conditions…":"Get Current Conditions Near Your Location"}
       </button>
       {wxErr&&<div style={{fontSize:11,color:T.amber,marginTop:-6,marginBottom:10,textAlign:"center"}}>{wxErr}</div>}
       {row2(col(1,<>{lbl("Temperature (°F)")}{inpM(fTemp,setFTemp,"72")}</>),col(1,<>{lbl("Altitude (ft)")}{inpM(fAlt,setFAlt,"350")}</>))}
