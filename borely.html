@@ -751,10 +751,10 @@ function App(){
   const[newCalName,setNewCalName]=useState("");
 
   // helpers
-  const sessFor  =id=>events.filter(e=>e.barrelId===id&&e.type==="session");
+  const sessFor  =id=>events.filter(e=>e.barrelId===id&&e.type==="session").reverse().sort((a,b)=>b.date.localeCompare(a.date));
   const cleansFor=id=>events.filter(e=>e.barrelId===id&&e.type==="clean").sort((a,b)=>b.date.localeCompare(a.date));
   const cbtosFor =id=>events.filter(e=>e.barrelId===id&&e.type==="cbto").sort((a,b)=>a.date.localeCompare(b.date));
-  const allFor   =id=>events.filter(e=>e.barrelId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  const allFor   =id=>events.filter(e=>e.barrelId===id).reverse().sort((a,b)=>b.date.localeCompare(a.date));
   const totalRnds=id=>sessFor(id).reduce((s,e)=>s+e.shots,0);
   const rsc      =id=>{const c=cleansFor(id)[0];return c?sessFor(id).filter(s=>s.date>c.date).reduce((s,e)=>s+e.shots,0):totalRnds(id);};
   const barrel   =barrels.find(b=>b.id===activeId);
@@ -1397,7 +1397,7 @@ function App(){
   // ── Detail View ───────────────────────────────────────────────────────────
   if(view==="detail"&&barrel){
     const isT=barrel.status==="transferred";
-    const allEvts=allFor(barrel.id),bSess=sessFor(barrel.id).sort((a,b)=>b.date.localeCompare(a.date)),bCbtos=cbtosFor(barrel.id);
+    const allEvts=allFor(barrel.id),bSess=sessFor(barrel.id),bCbtos=cbtosFor(barrel.id);
     const tot=totalRnds(barrel.id),bRsc=rsc(barrel.id);
     const pct=barrel.lifeRounds?Math.min(100,(tot/barrel.lifeRounds)*100):null;
     const lc=lifeColor(pct,T),rc=cleanColor(bRsc,T);
