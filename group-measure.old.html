@@ -59,13 +59,10 @@
     select.input-sm{width:auto;min-width:130px;text-align:left}
 
     /* Live group overlay — draggable, on canvas */
-    #group-overlay{position:absolute;top:60px;left:50%;transform:translateX(-50%);z-index:8;cursor:grab;display:none;user-select:none;-webkit-user-select:none;touch-action:none}
+    #group-overlay{position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:8;cursor:grab;display:none;user-select:none;-webkit-user-select:none;touch-action:none}
     #group-overlay:active{cursor:grabbing}
     .go-box{background:rgba(12,11,10,0.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(240,237,232,0.18);border-radius:10px;padding:10px 16px;text-align:center;min-width:140px}
     .go-shots{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(240,237,232,0.55);margin-bottom:4px}
-    .go-brand{display:flex;align-items:center;gap:6px;justify-content:center;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(240,237,232,0.1)}
-    .go-logo{flex-shrink:0}
-    .go-appname{font-size:12px;font-weight:800;letter-spacing:0.14em;color:#F0EDE8}
     .go-val{font-size:22px;font-weight:700;color:#F0EDE8;line-height:1;font-variant-numeric:tabular-nums}
     .go-moa{font-size:13px;color:rgba(46,196,182,0.9);margin-top:2px;font-variant-numeric:tabular-nums}
 
@@ -76,15 +73,6 @@
     .res-val{font-size:20px;font-weight:700;color:var(--text);line-height:1}
     .res-unit{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:.10em;margin-top:3px}
     .res-detail{font-size:12px;color:var(--sub);line-height:1.8;margin-bottom:10px}
-
-    /* Export button special style */
-    .btn-export{background:linear-gradient(135deg,#2EC4B6,#1A9E92);color:#0C0B0A;font-weight:600;position:relative;overflow:hidden}
-    .btn-export:hover{background:linear-gradient(135deg,#3DDDD0,#2EC4B6)}
-    .btn-export svg{vertical-align:-2px;margin-right:4px}
-
-    /* Export toast */
-    #export-toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(46,196,182,0.95);color:#0C0B0A;font-size:14px;font-weight:600;padding:10px 20px;border-radius:20px;z-index:100;opacity:0;pointer-events:none;transition:opacity 0.3s;white-space:nowrap}
-    #export-toast.show{opacity:1}
   </style>
 </head>
 <body>
@@ -97,15 +85,18 @@
 <!-- Upload -->
 <div id="upload-zone">
   <svg width="140" height="140" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:4px">
+    <!-- Target rings -->
     <circle cx="70" cy="70" r="66" fill="none" stroke="#38342C" stroke-width="1.5"/>
     <circle cx="70" cy="70" r="52" fill="none" stroke="#38342C" stroke-width="1.5"/>
     <circle cx="70" cy="70" r="38" fill="none" stroke="#38342C" stroke-width="1.5"/>
     <circle cx="70" cy="70" r="24" fill="none" stroke="#38342C" stroke-width="1.5"/>
     <circle cx="70" cy="70" r="10" fill="#C03030" opacity="0.7"/>
+    <!-- Crosshair -->
     <line x1="70" y1="4" x2="70" y2="34" stroke="#5C5850" stroke-width="1.5"/>
     <line x1="70" y1="106" x2="70" y2="136" stroke="#5C5850" stroke-width="1.5"/>
     <line x1="4" y1="70" x2="34" y2="70" stroke="#5C5850" stroke-width="1.5"/>
     <line x1="106" y1="70" x2="136" y2="70" stroke="#5C5850" stroke-width="1.5"/>
+    <!-- Bullet holes with teal circles -->
     <circle cx="62" cy="58" r="5.5" fill="none" stroke="#2EC4B6" stroke-width="2" opacity="0.9"/>
     <circle cx="62" cy="58" r="1.5" fill="#2EC4B6"/>
     <circle cx="76" cy="64" r="5.5" fill="none" stroke="#2EC4B6" stroke-width="2" opacity="0.9"/>
@@ -116,7 +107,9 @@
     <circle cx="58" cy="70" r="1.5" fill="#2EC4B6"/>
     <circle cx="74" cy="76" r="5.5" fill="none" stroke="#2EC4B6" stroke-width="2" opacity="0.9"/>
     <circle cx="74" cy="76" r="1.5" fill="#2EC4B6"/>
+    <!-- Measurement line (extreme spread) -->
     <line x1="58" y1="70" x2="76" y2="64" stroke="#C03030" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.7"/>
+    <!-- Reference points (amber) -->
     <circle cx="30" cy="30" r="5" fill="none" stroke="#C8963A" stroke-width="2"/>
     <line x1="27" y1="30" x2="33" y2="30" stroke="#C8963A" stroke-width="1.5"/>
     <line x1="30" y1="27" x2="30" y2="33" stroke="#C8963A" stroke-width="1.5"/>
@@ -146,19 +139,6 @@
   <!-- Live group size overlay (draggable) -->
   <div id="group-overlay">
     <div class="go-box">
-      <div class="go-brand">
-        <svg class="go-logo" width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(46,196,182,0.5)" stroke-width="4"/>
-          <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(46,196,182,0.35)" stroke-width="3"/>
-          <circle cx="50" cy="50" r="14" fill="none" stroke="rgba(46,196,182,0.25)" stroke-width="2.5"/>
-          <line x1="50" y1="4" x2="50" y2="20" stroke="rgba(240,237,232,0.6)" stroke-width="3" stroke-linecap="round"/>
-          <line x1="50" y1="80" x2="50" y2="96" stroke="rgba(240,237,232,0.6)" stroke-width="3" stroke-linecap="round"/>
-          <line x1="4" y1="50" x2="20" y2="50" stroke="rgba(240,237,232,0.6)" stroke-width="3" stroke-linecap="round"/>
-          <line x1="80" y1="50" x2="96" y2="50" stroke="rgba(240,237,232,0.6)" stroke-width="3" stroke-linecap="round"/>
-          <circle cx="50" cy="50" r="4" fill="#2EC4B6"/>
-        </svg>
-        <span class="go-appname">BORE<span style="color:#2EC4B6">LY</span></span>
-      </div>
       <div class="go-shots" id="go-shots">0 shots</div>
       <div class="go-val" id="go-inches">—</div>
       <div class="go-moa" id="go-moa">— MOA</div>
@@ -189,27 +169,30 @@
   </div>
   <div class="res-detail" id="r-detail"></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn btn-sm btn-export" id="export-btn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Save Image
-    </button>
     <button class="btn btn-sm" id="copy-btn">Copy Results</button>
     <button class="btn-ghost btn-sm" id="add-more">+ Add Impact</button>
     <button class="btn-ghost btn-sm" id="reset-btn">New Photo</button>
   </div>
 </div>
 
-<!-- Export toast -->
-<div id="export-toast">Image saved!</div>
-
 <script>
 // ── State ─────────────────────────────────────────────────────────────────
 const S = {
+  // Transform: photo position and scale
   tx: 0, ty: 0, scale: 1, minScale: 0.2, maxScale: 12,
-  refs: [], impacts: [],
-  step: 'idle',
-  refDistIn: 1.0, caliberIn: 0.264, distYards: 100,
-  lastTouchLen: 0, pinch: null, panStart: null,
+  // Markers in image coords
+  refs: [],      // [{x,y}]
+  impacts: [],   // [{x,y}]
+  // Workflow
+  step: 'idle',  // idle | ref1 | ref2 | refDist | caliber | impact | done
+  // Config
+  refDistIn: 1.0,
+  caliberIn: 0.264,
+  distYards: 100,
+  // Touch
+  lastTouchLen: 0,
+  pinch: null,
+  panStart: null,
 };
 
 const vp     = document.getElementById('viewport');
@@ -260,9 +243,11 @@ function resizeOverlay() {
 window.addEventListener('resize', resizeOverlay);
 
 // ── Image ↔ screen coords ─────────────────────────────────────────────────
+// Image point → screen point
 function imgToScreen(ix, iy) {
   return { x: ix * S.scale + S.tx, y: iy * S.scale + S.ty };
 }
+// Screen center → image coords (what's currently under the reticle)
 function reticleToImg() {
   const cx = vp.clientWidth  / 2;
   const cy = vp.clientHeight / 2;
@@ -318,6 +303,42 @@ function drawOverlay() {
     octx.fillText(i+1, s.x, s.y - calR - 4);
   });
 
+  // Live group size label
+  if(S.impacts.length>=2){
+    const ppi2=getPxPerInch();
+    if(ppi2){
+      let maxD2=0;
+      for(let i=0;i<S.impacts.length;i++)
+        for(let j=i+1;j<S.impacts.length;j++){
+          const dx=S.impacts[i].x-S.impacts[j].x,dy=S.impacts[i].y-S.impacts[j].y;
+          const d=Math.sqrt(dx*dx+dy*dy);if(d>maxD2)maxD2=d;
+        }
+      const esIn2=(maxD2/ppi2).toFixed(3);
+      const mf2=100/(S.distYards*1.047);
+      const esMOA2=(maxD2/ppi2*mf2).toFixed(2);
+      const vpW=oCanvas.width;
+      if(!S.labelPos)S.labelPos={x:vpW/2,y:54};
+      const lx=S.labelPos.x,ly=S.labelPos.y;
+      const pad=10,lh=20,boxW=120;
+      octx.save();
+      octx.shadowColor='rgba(0,0,0,0.6)';octx.shadowBlur=10;
+      octx.fillStyle='rgba(12,11,10,0.60)';
+      octx.beginPath();
+      if(octx.roundRect)octx.roundRect(lx-boxW/2,ly-pad,boxW,lh*3+pad*2,8);
+      else octx.rect(lx-boxW/2,ly-pad,boxW,lh*3+pad*2);
+      octx.fill();octx.shadowBlur=0;octx.restore();
+      octx.textAlign='center';
+      octx.font='bold 11px -apple-system,sans-serif';
+      octx.fillStyle='rgba(156,148,136,0.9)';
+      octx.fillText(`${S.impacts.length} shots`,lx,ly+lh*0.8);
+      octx.font='bold 22px -apple-system,sans-serif';
+      octx.fillStyle='rgba(240,237,232,0.95)';
+      octx.fillText(`${esIn2}"`,lx,ly+lh*0.8+lh*1.15);
+      octx.font='bold 14px -apple-system,sans-serif';
+      octx.fillStyle='rgba(46,196,182,0.9)';
+      octx.fillText(`${esMOA2} MOA`,lx,ly+lh*0.8+lh*2.3);
+    }
+  }
   // Group bounding box
   if (S.impacts.length>=2 && pxPerInch) {
     const scr = S.impacts.map(p=>imgToScreen(p.x,p.y));
@@ -336,6 +357,7 @@ function updateLiveOverlay() {
   if (!ppi || S.impacts.length < 2) { overlay.style.display='none'; return; }
   overlay.style.display = 'block';
 
+  // Compute ES
   let maxD=0;
   for(let i=0;i<S.impacts.length;i++)
     for(let j=i+1;j<S.impacts.length;j++){
@@ -395,16 +417,34 @@ function getPxPerInch() {
 }
 
 // ── Pan / pinch ───────────────────────────────────────────────────────────
+function isOnLabel(cx,cy){
+  if(!S.labelPos||S.impacts.length<2)return false;
+  const boxW=120,pad=10,lh=20;
+  const lx=S.labelPos.x,ly=S.labelPos.y;
+  return cx>=lx-boxW/2&&cx<=lx+boxW/2&&cy>=ly-pad&&cy<=ly+lh*3+pad*2;
+}
 vp.addEventListener('mousedown', e=>{
-  S.panStart={cx:e.clientX,cy:e.clientY,tx:S.tx,ty:S.ty};
+  const r=vp.getBoundingClientRect();
+  const cx=e.clientX-r.left,cy=e.clientY-r.top;
+  if(isOnLabel(cx,cy)){
+    S.labelDrag={sx:cx,sy:cy,lx:S.labelPos.x,ly:S.labelPos.y};
+  } else {
+    S.panStart={cx:e.clientX,cy:e.clientY,tx:S.tx,ty:S.ty};
+  }
 });
 window.addEventListener('mousemove', e=>{
+  if(S.labelDrag){
+    const r=vp.getBoundingClientRect();
+    const cx=e.clientX-r.left,cy=e.clientY-r.top;
+    S.labelPos={x:S.labelDrag.lx+(cx-S.labelDrag.sx),y:S.labelDrag.ly+(cy-S.labelDrag.sy)};
+    drawOverlay();return;
+  }
   if(!S.panStart)return;
   S.tx=S.panStart.tx+(e.clientX-S.panStart.cx);
   S.ty=S.panStart.ty+(e.clientY-S.panStart.cy);
   applyTransform();
 });
-window.addEventListener('mouseup',()=>{S.panStart=null;});
+window.addEventListener('mouseup',()=>{S.panStart=null;S.labelDrag=null;});
 
 vp.addEventListener('wheel', e=>{
   e.preventDefault();
@@ -419,12 +459,21 @@ vp.addEventListener('wheel', e=>{
 
 vp.addEventListener('touchstart', e=>{
   e.preventDefault();
+  if(e.touches.length===1){
+    const r=vp.getBoundingClientRect();
+    const cx=e.touches[0].clientX-r.left,cy=e.touches[0].clientY-r.top;
+    if(isOnLabel(cx,cy)){
+      S.labelDrag={sx:cx,sy:cy,lx:S.labelPos?S.labelPos.x:oCanvas.width/2,ly:S.labelPos?S.labelPos.y:54};
+      return;
+    }
+  }
   if(e.touches.length===2){
     S.pinch={dist:tDist(e.touches),scale:S.scale,tx:S.tx,ty:S.ty,
       cx:(e.touches[0].clientX+e.touches[1].clientX)/2,
       cy:(e.touches[0].clientY+e.touches[1].clientY)/2};
     S.panStart=null;
   } else {
+    const r=vp.getBoundingClientRect();
     S.panStart={cx:e.touches[0].clientX,cy:e.touches[0].clientY,tx:S.tx,ty:S.ty};
     S.pinch=null;
   }
@@ -432,6 +481,12 @@ vp.addEventListener('touchstart', e=>{
 
 vp.addEventListener('touchmove', e=>{
   e.preventDefault();
+  if(S.labelDrag&&e.touches.length===1){
+    const r=vp.getBoundingClientRect();
+    const cx=e.touches[0].clientX-r.left,cy=e.touches[0].clientY-r.top;
+    S.labelPos={x:S.labelDrag.lx+(cx-S.labelDrag.sx),y:S.labelDrag.ly+(cy-S.labelDrag.sy)};
+    drawOverlay();return;
+  }
   if(e.touches.length===2 && S.pinch){
     const nd=tDist(e.touches);
     const ns=Math.min(S.maxScale,Math.max(S.minScale,S.pinch.scale*(nd/S.pinch.dist)));
@@ -448,7 +503,7 @@ vp.addEventListener('touchmove', e=>{
   }
 },{passive:false});
 
-vp.addEventListener('touchend', ()=>{S.panStart=null;S.pinch=null;},{passive:true});
+vp.addEventListener('touchend', ()=>{S.panStart=null;S.pinch=null;S.labelDrag=null;},{passive:true});
 
 function tDist(t){const dx=t[0].clientX-t[1].clientX,dy=t[0].clientY-t[1].clientY;return Math.sqrt(dx*dx+dy*dy);}
 
@@ -558,12 +613,14 @@ function setReticle(color, label) {
   document.getElementById('reticle-v').style.background=color;
   document.getElementById('reticle-label').style.color=color;
   document.getElementById('reticle-label').textContent=label;
+  // Fixed ring size; crosshair lines fill exactly the ring diameter
   const ring = document.getElementById('reticle-ring');
   const ringSize = 56;
   ring.style.width=ringSize+'px'; ring.style.height=ringSize+'px';
+  // Set crosshair lines to exactly span the ring interior
   const rh = document.getElementById('reticle-h');
   const rv = document.getElementById('reticle-v');
-  const ext = ringSize + 20;
+  const ext = ringSize + 20; // 10px extension beyond ring on each side
   rh.style.width = ext+'px'; rh.style.left = '50%'; rh.style.marginLeft = (-ext/2)+'px';
   rv.style.height = ext+'px'; rv.style.top = '50%'; rv.style.marginTop = (-ext/2)+'px';
 }
@@ -610,9 +667,7 @@ function calculate() {
 
   document.getElementById('results').style.display='block';
 
-  // Store calculated results for export
-  S.lastCalc = { esIn, esMOA, mrIn, mrMOA: mrIn*mf, fp, ppi, yards };
-
+  // Draw connecting line on overlay
   drawOverlay();
   const a=imgToScreen(S.impacts[fp[0]].x,S.impacts[fp[0]].y);
   const b=imgToScreen(S.impacts[fp[1]].x,S.impacts[fp[1]].y);
@@ -620,10 +675,12 @@ function calculate() {
   octx.strokeStyle='rgba(192,48,48,.8)'; octx.lineWidth=2;
   octx.setLineDash([6,3]); octx.stroke(); octx.setLineDash([]);
 
+  // Also need yards input
   showYardsInput();
 }
 
 function showYardsInput() {
+  // Add yards row to results if not there
   const res=document.getElementById('results');
   if(res.querySelector('#yards-row')) return;
   const row=document.createElement('div');
@@ -646,7 +703,7 @@ document.getElementById('copy-btn').addEventListener('click', ()=>{
   const es=document.getElementById('r-es-in').textContent;
   const moa=document.getElementById('r-es-moa').textContent;
   const shots=document.getElementById('r-shots').textContent;
-  const text=`GroupLY by Borely: ${es} / ${moa} MOA · ${shots} shots · ${S.distYards}yds`;
+  const text=`GroupLY: ${es} / ${moa} MOA · ${shots} shots · ${S.distYards}yds`;
   navigator.clipboard?.writeText(text).then(()=>{
     const b=document.getElementById('copy-btn');
     b.textContent='Copied!';
@@ -654,207 +711,8 @@ document.getElementById('copy-btn').addEventListener('click', ()=>{
   });
 });
 
-// ── Export / Save Image ───────────────────────────────────────────────────
-document.getElementById('export-btn').addEventListener('click', exportImage);
-
-function drawBorelyLogo(ctx, x, y, height) {
-  // Draw "BORELY" wordmark with the teal Y
-  const fontSize = height * 0.7;
-  ctx.save();
-  ctx.font = `800 ${fontSize}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ctx.textAlign = 'left';
-  ctx.textBaseline = 'middle';
-
-  // "BORE" in white
-  ctx.fillStyle = '#F0EDE8';
-  ctx.fillText('BORE', x, y);
-  const boreW = ctx.measureText('BORE').width;
-
-  // "LY" in teal
-  ctx.fillStyle = '#2EC4B6';
-  ctx.fillText('LY', x + boreW, y);
-
-  ctx.restore();
-  return boreW + ctx.measureText('LY').width;
-}
-
-function exportImage() {
-  if (!photo.naturalWidth || S.impacts.length < 2 || !S.lastCalc) return;
-
-  const iw = photo.naturalWidth;
-  const ih = photo.naturalHeight;
-  const ppi = S.lastCalc.ppi;
-  const calR = (S.caliberIn / 2) * ppi;
-
-  // Create export canvas at native photo resolution
-  const ec = document.createElement('canvas');
-  ec.width = iw;
-  ec.height = ih;
-  const ex = ec.getContext('2d');
-
-  // 1. Draw original photo
-  ex.drawImage(photo, 0, 0, iw, ih);
-
-  // 2. Draw impact circles at native scale
-  S.impacts.forEach((pt, i) => {
-    ex.beginPath(); ex.arc(pt.x, pt.y, calR, 0, Math.PI * 2);
-    ex.fillStyle = 'rgba(46,196,182,0.18)'; ex.fill();
-    ex.strokeStyle = '#2EC4B6'; ex.lineWidth = Math.max(3, iw / 600);
-    ex.stroke();
-    ex.beginPath(); ex.arc(pt.x, pt.y, Math.max(4, iw / 500), 0, Math.PI * 2);
-    ex.fillStyle = '#2EC4B6'; ex.fill();
-    // Number label
-    const labelSize = Math.max(16, iw / 120);
-    ex.font = `bold ${labelSize}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-    ex.fillStyle = '#2EC4B6'; ex.textAlign = 'center';
-    ex.fillText(i + 1, pt.x, pt.y - calR - labelSize * 0.4);
-  });
-
-  // 3. Draw ES connecting line
-  const fp = S.lastCalc.fp;
-  const pa = S.impacts[fp[0]], pb = S.impacts[fp[1]];
-  ex.beginPath(); ex.moveTo(pa.x, pa.y); ex.lineTo(pb.x, pb.y);
-  ex.strokeStyle = 'rgba(192,48,48,0.8)'; ex.lineWidth = Math.max(3, iw / 500);
-  ex.setLineDash([Math.max(8, iw / 200), Math.max(4, iw / 400)]);
-  ex.stroke(); ex.setLineDash([]);
-
-  // 4. Draw group bounding box
-  const xs = S.impacts.map(p => p.x), ys = S.impacts.map(p => p.y);
-  const bx0 = Math.min(...xs) - calR, by0 = Math.min(...ys) - calR;
-  const bx1 = Math.max(...xs) + calR, by1 = Math.max(...ys) + calR;
-  ex.strokeStyle = 'rgba(106,138,90,0.5)'; ex.lineWidth = Math.max(2, iw / 800);
-  ex.setLineDash([Math.max(6, iw / 250), Math.max(5, iw / 300)]);
-  ex.strokeRect(bx0, by0, bx1 - bx0, by1 - by0);
-  ex.setLineDash([]);
-
-  // 5. Draw branded results banner at bottom
-  const bannerH = Math.max(100, ih * 0.1);
-  const bannerY = ih - bannerH;
-  const pad = bannerH * 0.15;
-  const fontSize = bannerH * 0.22;
-  const smallFont = bannerH * 0.15;
-
-  // Banner background
-  ex.fillStyle = 'rgba(12,11,10,0.82)';
-  ex.fillRect(0, bannerY, iw, bannerH);
-  // Top border line
-  ex.fillStyle = 'rgba(56,52,44,0.8)';
-  ex.fillRect(0, bannerY, iw, 2);
-  // Accent stripe
-  ex.fillStyle = '#2EC4B6';
-  ex.fillRect(0, bannerY, iw, Math.max(3, bannerH * 0.03));
-
-  // Left side: Borely logo
-  const logoH = bannerH * 0.55;
-  const logoFontSize = logoH * 0.42;
-  const logoY = bannerY + bannerH / 2;
-
-  ex.save();
-  ex.font = `800 ${logoFontSize}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.textAlign = 'left';
-  ex.textBaseline = 'middle';
-
-  const logoX = pad * 1.5;
-
-  // "BORE" in white
-  ex.fillStyle = '#F0EDE8';
-  ex.fillText('BORE', logoX, logoY - logoFontSize * 0.35);
-  const boreW = ex.measureText('BORE').width;
-  // "LY" in teal
-  ex.fillStyle = '#2EC4B6';
-  ex.fillText('LY', logoX + boreW, logoY - logoFontSize * 0.35);
-
-  // "GroupLY" subtitle below
-  const subSize = logoFontSize * 0.45;
-  ex.font = `600 ${subSize}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.fillStyle = 'rgba(156,148,136,0.9)';
-  ex.fillText('GroupLY', logoX, logoY + logoFontSize * 0.45);
-  ex.restore();
-
-  // Right side: measurement results
-  const { esIn, esMOA, mrIn, mrMOA, yards } = S.lastCalc;
-  const nShots = S.impacts.length;
-
-  // Primary: ES value large
-  ex.textAlign = 'right';
-  const rX = iw - pad * 1.5;
-
-  ex.font = `bold ${fontSize * 1.1}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.fillStyle = '#F0EDE8';
-  ex.fillText(`${esIn.toFixed(3)}"`, rX, bannerY + pad + fontSize * 0.9);
-
-  // MOA value in teal
-  ex.font = `bold ${fontSize * 0.85}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.fillStyle = '#2EC4B6';
-  const moaText = `${esMOA.toFixed(2)} MOA`;
-  const moaW = ex.measureText(moaText).width;
-  ex.fillText(moaText, rX, bannerY + pad + fontSize * 1.9);
-
-  // Detail line
-  ex.font = `${smallFont}px -apple-system,BlinkMacSystemFont,system-ui,sans-serif`;
-  ex.fillStyle = 'rgba(156,148,136,0.9)';
-  ex.fillText(`${nShots} shots · ${yards} yds · MR: ${mrIn.toFixed(3)}" / ${mrMOA.toFixed(2)} MOA`, rX, bannerY + bannerH - pad * 1.1);
-
-  // Center: optional crosshair icon decoration
-  const ctrX = iw / 2;
-  const ctrY = bannerY + bannerH / 2;
-  const iconR = bannerH * 0.18;
-  ex.strokeStyle = 'rgba(106,138,90,0.35)';
-  ex.lineWidth = Math.max(2, bannerH * 0.02);
-  ex.beginPath(); ex.arc(ctrX, ctrY, iconR, 0, Math.PI * 2); ex.stroke();
-  const armLen = iconR * 1.4;
-  ex.beginPath();
-  ex.moveTo(ctrX - armLen, ctrY); ex.lineTo(ctrX - iconR * 0.3, ctrY);
-  ex.moveTo(ctrX + iconR * 0.3, ctrY); ex.lineTo(ctrX + armLen, ctrY);
-  ex.moveTo(ctrX, ctrY - armLen); ex.lineTo(ctrX, ctrY - iconR * 0.3);
-  ex.moveTo(ctrX, ctrY + iconR * 0.3); ex.lineTo(ctrX, ctrY + armLen);
-  ex.stroke();
-
-  // 6. Export
-  ec.toBlob(blob => {
-    if (!blob) return;
-    const file = new File([blob], `grouply-${Date.now()}.png`, { type: 'image/png' });
-
-    // Try Web Share API first (mobile → save to photos)
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      navigator.share({
-        files: [file],
-        title: 'GroupLY Result',
-        text: `${esIn.toFixed(3)}" / ${esMOA.toFixed(2)} MOA · ${nShots} shots · ${yards}yds`
-      }).then(() => {
-        showToast('Image shared!');
-      }).catch(err => {
-        if (err.name !== 'AbortError') fallbackDownload(blob);
-      });
-    } else {
-      fallbackDownload(blob);
-    }
-  }, 'image/png', 1.0);
-}
-
-function fallbackDownload(blob) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `grouply-${Date.now()}.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('Image saved!');
-}
-
-function showToast(msg) {
-  const toast = document.getElementById('export-toast');
-  toast.textContent = msg;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2500);
-}
-
-// ── Reset ─────────────────────────────────────────────────────────────────
 function reset() {
   S.refs=[]; S.impacts=[]; S.scale=1; S.tx=0; S.ty=0;
-  S.lastCalc = null;
   document.getElementById('results').style.display='none';
   document.getElementById('group-overlay').style.display='none';
   document.getElementById('viewport').style.display='none';
@@ -862,13 +720,16 @@ function reset() {
   document.getElementById('upload-zone').style.display='flex';
   document.getElementById('file-input').value='';
   document.getElementById('step-pill').textContent='Upload';
+  S.labelPos=null;
   reticle.style.display='none';
 }
 
-// Initial
+// Initial yards
 S.distYards=100;
-S.lastCalc=null;
+S.labelPos=null;
+S.labelDrag=null;
 
+// Redraw on pan so overlay tracks
 const origApply=applyTransform;
 </script>
 </body>
